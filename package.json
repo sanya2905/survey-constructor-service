@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.0.0",
+    "@mui/material": "^9.0.0",
+    "axios": "^1.15.0",
+    "react-router-dom": "^7.14.1",
+    "survey-core": "^2.5.20",
+    "survey-creator-core": "^2.5.20",
+    "survey-creator-react": "^2.5.20",
+    "survey-react-ui": "^2.5.20"
+  }
+}
