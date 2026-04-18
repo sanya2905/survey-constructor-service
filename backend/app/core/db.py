@@ -9,10 +9,8 @@ class Base(DeclarativeBase):
     pass
 
 async def init_db() -> None:
-    # MVP: авто-создание таблиц. Позже можно заменить на Alembic.
-    from app.models import survey, session  # noqa: F401
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Таблицы создаются миграциями Alembic; автосоздание здесь отключено.
+    return None
 
 async def get_db() -> AsyncSession:
     async with SessionLocal() as session:

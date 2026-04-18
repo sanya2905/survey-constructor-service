@@ -1,0 +1,30 @@
+name: E2E smoke
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start services
+        run: |
+          docker compose up --build -d
+
+      - name: Wait for API
+        run: |
+          for i in {1..60}; do
+            if curl -sS http://localhost:8001/healthz | grep -q ok; then
+              echo "api ready"; break
+            fi
+            sleep 1
+          done
+
+      - name: Run E2E smoke script
+        run: |
+          python3 scripts/e2e_smoke.py
