@@ -16,4 +16,9 @@ until pg_isready -h "$PGHOST" -p "$PGPORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB"
 done
 
 echo "PostgreSQL is ready, starting API"
+echo "Applying database migrations (alembic upgrade head)"
+export PYTHONPATH=/app:$PYTHONPATH
+alembic -c /app/alembic.ini upgrade head
+
+echo "Starting API"
 exec uvicorn app.main:app --host=0.0.0.0 --port=8000

@@ -8,6 +8,14 @@ from app.models.survey import Survey
 from app.models.session import SurveySession
 from app.schemas.session import SessionCreate, SessionOut, SessionSave, SessionComplete
 
+
+def _validate_answers(answers_json: dict) -> None:
+    if not isinstance(answers_json, dict):
+        raise HTTPException(400, "answers_json must be an object")
+    for k in answers_json.keys():
+        if not isinstance(k, str):
+            raise HTTPException(400, "answers_json keys must be strings")
+
 router = APIRouter(prefix="/public")
 
 @router.get("/surveys/{survey_id}")
@@ -55,6 +63,7 @@ async def save_progress(session_id: uuid.UUID, payload: SessionSave, db: AsyncSe
     if session.is_completed:
         raise HTTPException(400, "Session already completed")
 
+    _validate_answers(payload.answers_json or {})
     session.answers_json = payload.answers_json or {}
     await db.commit()
     await db.refresh(session)
@@ -67,6 +76,7 @@ async def complete_session(session_id: uuid.UUID, payload: SessionComplete, db: 
     if not session:
         raise HTTPException(404, "Session not found")
 
+    _validate_answers(payload.answers_json or {})
     session.answers_json = payload.answers_json or {}
     session.is_completed = True
     await db.commit()

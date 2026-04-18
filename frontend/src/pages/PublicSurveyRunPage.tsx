@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Alert, CircularProgress, Stack, Typography } from "@mui/material";
 import { api } from "../api";
-import type { PublicSurvey } from "../api";
-import type { Session } from "../api";
+import type { PublicSurvey, Session } from "../api";
 import { Model } from "survey-core";
 import { Survey as SurveyRunner } from "survey-react-ui";
 
@@ -11,7 +10,7 @@ function storageKey(surveyId: string) {
   return `survey_session_${surveyId}`;
 }
 
-export default function PublicSurveyRunPage() {
+export default function PublicSurveyRunPage(): JSX.Element {
   const { surveyId } = useParams<{ surveyId: string }>();
 
   const [pub, setPub] = useState<PublicSurvey | null>(null);
@@ -21,10 +20,7 @@ export default function PublicSurveyRunPage() {
 
   const saveTimer = useRef<number | null>(null);
 
-  const model = useMemo(() => {
-    // создадим “пустую” модель, JSON подставим позже
-    return new Model({ title: "Loading...", pages: [] });
-  }, []);
+  const model = useMemo(() => new Model({ title: "Loading...", pages: [] }), []);
 
   async function loadAll() {
     if (!surveyId) return;
@@ -40,13 +36,20 @@ export default function PublicSurveyRunPage() {
       // 2) session resume/start
       const existing = localStorage.getItem(storageKey(surveyId));
       if (existing) {
-        const ses = await api.get<Session>(`/public/sessions/${existing}`);
-        setSession(ses.data);
-        model.data = ses.data.answers_json || {};
+        try {
+          const ses = await api.get<Session>(`/public/sessions/${existing}`);
+          setSession(ses.data);
+          model.data = ses.data.answers_json || {};
+        } catch {
+          const created = await api.post<Session>(`/public/surveys/${surveyId}/sessions`, {
+            respondent_id: null,
+          });
+          setSession(created.data);
+          localStorage.setItem(storageKey(surveyId), created.data.id);
+          model.data = created.data.answers_json || {};
+        }
       } else {
-        const created = await api.post<Session>(`/public/surveys/${surveyId}/sessions`, {
-          respondent_id: null, // можно потом добавить ввод
-        });
+        const created = await api.post<Session>(`/public/surveys/${surveyId}/sessions`, { respondent_id: null });
         setSession(created.data);
         localStorage.setItem(storageKey(surveyId), created.data.id);
         model.data = created.data.answers_json || {};
@@ -64,8 +67,6 @@ export default function PublicSurveyRunPage() {
 
         try {
           await api.post(`/public/sessions/${sid}/complete`, { answers_json: sender.data });
-          // можно очистить sessionId после завершения:
-          // localStorage.removeItem(storageKey(surveyId));
         } catch (e: any) {
           setErr(e?.message ?? "Failed to complete session");
         }
@@ -90,11 +91,14 @@ export default function PublicSurveyRunPage() {
       } catch {
         // MVP: молча (можно показать toast позже)
       }
-    }, 700);
+    }, 700) as unknown as number;
   }
 
   useEffect(() => {
     loadAll();
+    return () => {
+      if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [surveyId]);
 
