@@ -78,8 +78,8 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 
 def has_role(role: str):
     async def role_checker(current_user: User = Depends(get_current_active_user)) -> User:
-        # admin has all privileges
-        if current_user.role == role or current_user.role == "admin":
+        # admin and researcher have all privileges
+        if current_user.role == role or current_user.role in ("admin", "researcher"):
             return current_user
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient privileges")
 

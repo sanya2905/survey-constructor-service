@@ -1,7 +1,6 @@
 import axios from "axios";
 
-const API_HOST = (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8001";
-const API_PREFIX = API_HOST.replace(/\/$/, "") + "/api/v1";
+const API_PREFIX = (import.meta as any).env?.VITE_API_BASE_URL ?? "/api/v1";
 
 export const api = axios.create({ baseURL: API_PREFIX, headers: { "Content-Type": "application/json" } });
 
@@ -82,24 +81,29 @@ export async function publishSurvey(id: string) {
   return res.data;
 }
 
+export async function getCurrentUser() {
+  const res = await api.get("/auth/me");
+  return res.data;
+}
+
 // public endpoints
 export async function getPublicSurvey(id: string) {
-  const res = await axios.get(`${API_HOST}/public/surveys/${id}`);
+  const res = await api.get(`/public/surveys/${id}`);
   return res.data;
 }
 
 export async function startSession(survey_id: string, respondent_id?: string) {
-  const res = await axios.post(`${API_HOST}/public/surveys/${survey_id}/sessions`, { respondent_id });
+  const res = await api.post(`/public/surveys/${survey_id}/sessions`, { respondent_id });
   return res.data;
 }
 
 export async function saveProgress(session_id: string, answers_json: any) {
-  const res = await axios.put(`${API_HOST}/public/sessions/${session_id}`, { answers_json });
+  const res = await api.put(`/public/sessions/${session_id}`, { answers_json });
   return res.data;
 }
 
 export async function completeSession(session_id: string, answers_json: any) {
-  const res = await axios.post(`${API_HOST}/public/sessions/${session_id}/complete`, { answers_json });
+  const res = await api.post(`/public/sessions/${session_id}/complete`, { answers_json });
   return res.data;
 }
 

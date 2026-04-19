@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Alert,
@@ -11,18 +11,16 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  TextField,
   Typography,
 } from "@mui/material";
-import { getSurveys, createSurvey as apiCreateSurvey, deleteSurvey, login, setAuthToken } from "../api";
+import { getSurveys, createSurvey as apiCreateSurvey, deleteSurvey, getCurrentUser } from "../api";
 import type { Survey } from "../api";
 
-export default function AdminSurveysListPage(): JSX.Element {
+export default function AdminSurveysListPage() {
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [err, setErr] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ role?: string; username?: string } | null>(null);
   const navigate = useNavigate();
 
   async function load() {
@@ -40,7 +38,19 @@ export default function AdminSurveysListPage(): JSX.Element {
 
   useEffect(() => {
     load();
+    fetchCurrentUser();
   }, []);
+
+  async function fetchCurrentUser() {
+    try {
+      const u: any = await getCurrentUser();
+      setCurrentUser(u);
+    } catch {
+      const role = localStorage.getItem("auth_role");
+      if (role) setCurrentUser({ role });
+      else setCurrentUser(null);
+    }
+  }
 
   async function handleCreate() {
     setErr(null);
@@ -68,35 +78,25 @@ export default function AdminSurveysListPage(): JSX.Element {
     }
   }
 
-  async function handleLogin() {
-    try {
-      const res: any = await login(username, password);
-      setAuthToken(res.access_token);
-      await load();
-    } catch (e: any) {
-      setErr(e?.message ?? String(e));
-    }
-  }
+  
+
+  const roleLabel = currentUser?.role === "admin" ? "Админ" : currentUser?.role === "researcher" ? "Исследователь" : currentUser?.role === "student" ? "Студент" : "";
+
+  const canEdit = currentUser?.role === "admin" || currentUser?.role === "researcher";
 
   return (
     <div style={{ padding: 16 }}>
-      <Stack direction="row" spacing={2} alignItems="center">
-        <Typography variant="h5">Админ — анкеты</Typography>
-        <Button variant="contained" onClick={handleCreate}>
+      <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+        <Typography variant="h5">{roleLabel ? `${roleLabel} — анкеты` : "Анкеты"}</Typography>
+        <Button variant="contained" onClick={handleCreate} disabled={!canEdit}>
           Создать
         </Button>
-        <Button variant="outlined" component={Link} to="/">
+        <Button variant="outlined" component={Link} to="/admin/surveys">
           Главная
         </Button>
       </Stack>
 
-      <Stack direction="row" spacing={1} style={{ marginTop: 12 }}>
-        <TextField label="username" size="small" value={username} onChange={(e) => setUsername(e.target.value)} />
-        <TextField label="password" type="password" size="small" value={password} onChange={(e) => setPassword(e.target.value)} />
-        <Button variant="contained" onClick={handleLogin}>
-          Войти
-        </Button>
-      </Stack>
+      
 
       {err && <Alert severity="error">{err}</Alert>}
 
@@ -121,7 +121,7 @@ export default function AdminSurveysListPage(): JSX.Element {
                     <Button size="small" component={Link} to={`/admin/surveys/${s.id}`}>
                       Редактировать
                     </Button>
-                    <Button size="small" onClick={() => handleDelete(s.id)}>
+                    <Button size="small" onClick={() => handleDelete(s.id)} disabled={!canEdit}>
                       Удалить
                     </Button>
                   </TableCell>
