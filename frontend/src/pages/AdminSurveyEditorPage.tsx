@@ -1,13 +1,13 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Alert, Button, CircularProgress, Stack, Typography } from "@mui/material";
 import { SurveyCreatorComponent, SurveyCreator } from "survey-creator-react";
 import "survey-core/survey-core.css";
 import "survey-creator-core/survey-creator-core.css";
-import { getSurvey, createSurvey, updateSurvey, publishSurvey, deleteSurvey } from "../api";
+import { getSurvey, createSurvey, updateSurvey, publishSurvey, deleteSurvey, getCurrentUser } from "../api";
 import type { Survey } from "../api";
 
-export default function AdminSurveyEditorPage(): JSX.Element {
+export default function AdminSurveyEditorPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [survey, setSurvey] = useState<Survey | null>(null);
@@ -19,6 +19,7 @@ export default function AdminSurveyEditorPage(): JSX.Element {
   const [err, setErr] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [creatorState, setCreatorState] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ role?: string } | null>(null);
 
   const creator = useMemo(() => {
     const c = new SurveyCreator({ showLogicTab: true, autoSaveEnabled: true, autoSaveDelay: 1000 });
@@ -65,7 +66,7 @@ export default function AdminSurveyEditorPage(): JSX.Element {
         setInfo(null);
         try {
           const payload = {
-            title: surveyRef.current?.title ?? (creator.JSON?.title ?? "Анкета"),
+            title: creator.JSON?.title ?? surveyRef.current?.title ?? "Анкета",
             description: surveyRef.current?.description ?? null,
             survey_json: creator.JSON,
           } as Partial<Survey>;
@@ -91,12 +92,32 @@ export default function AdminSurveyEditorPage(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [creator, navigate]);
 
+    useEffect(() => {
+      async function fetchUser() {
+        try {
+          const u: any = await getCurrentUser();
+          setCurrentUser(u);
+          (creator as any).autoSaveEnabled = u?.role === "admin" || u?.role === "researcher";
+        } catch {
+          const role = localStorage.getItem("auth_role");
+          if (role) {
+            setCurrentUser({ role });
+            (creator as any).autoSaveEnabled = role === "admin" || role === "researcher";
+          } else {
+            setCurrentUser(null);
+            (creator as any).autoSaveEnabled = false;
+          }
+        }
+      }
+      fetchUser();
+    }, [creator]);
+
   async function handleSave() {
     setErr(null);
     setInfo(null);
     try {
       const payload = {
-        title: survey?.title ?? (creator.JSON?.title ?? "Анкета"),
+        title: creator.JSON?.title ?? survey?.title ?? "Анкета",
         description: survey?.description ?? null,
         survey_json: creator.JSON,
       } as Partial<Survey>;
@@ -119,6 +140,19 @@ export default function AdminSurveyEditorPage(): JSX.Element {
     setErr(null);
     setInfo(null);
     try {
+      // ensure latest title / JSON are persisted before publishing
+      const payload = {
+        title: creator.JSON?.title ?? survey?.title ?? "",
+        description: survey?.description ?? null,
+        survey_json: creator.JSON,
+      } as Partial<Survey>;
+
+      try {
+        await updateSurvey(survey.id as string, payload);
+      } catch {
+        // continue to publish even if update fails; publish endpoint will still set is_published
+      }
+
       const res = await publishSurvey(survey.id as string);
       setSurvey(res);
       setInfo("Опубликовано");
@@ -143,26 +177,35 @@ export default function AdminSurveyEditorPage(): JSX.Element {
   return (
     <Stack spacing={2} sx={{ padding: 2 }}>
       <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
-        <Stack>
-          <Typography variant="h5">Редактор анкеты</Typography>
-          {survey && (
-            <Typography variant="body2" color="text.secondary">
-              ID: {survey.id} • status: {survey.is_published ? "published" : "draft"} • v{survey.version}
-            </Typography>
-          )}
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <Button variant="text" onClick={() => navigate("/admin/surveys")}>
+            Назад
+          </Button>
+          <Stack>
+            <Typography variant="h5">Редактор анкеты</Typography>
+            {survey && (
+              <Typography variant="body2" color="text.secondary">
+                ID: {survey.id} • status: {survey.is_published ? "published" : "draft"} • v{survey.version}
+              </Typography>
+            )}
+          </Stack>
         </Stack>
 
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <Button variant="outlined" onClick={() => window.location.reload()}>
             Обновить
           </Button>
 
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Button variant="contained" onClick={handleSave}>
+          <Button variant="outlined" onClick={() => navigate("/admin/surveys")}>
+            Главная
+          </Button>
+
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+            <Button variant="contained" onClick={handleSave} disabled={!(currentUser?.role === "admin" || currentUser?.role === "researcher")}>
               Сохранить
             </Button>
             {creatorState === "saving" && (
-              <Stack direction="row" alignItems="center" spacing={1}>
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                 <CircularProgress size={18} />
               </Stack>
             )}
@@ -170,10 +213,10 @@ export default function AdminSurveyEditorPage(): JSX.Element {
             {creatorState === "modified" && <Typography color="text.secondary">Изменено</Typography>}
           </Stack>
 
-          <Button color="success" variant="contained" onClick={handlePublish} disabled={!!survey?.is_published}>
+          <Button color="success" variant="contained" onClick={handlePublish} disabled={!!survey?.is_published || !(currentUser?.role === "admin" || currentUser?.role === "researcher") }>
             Опубликовать
           </Button>
-          <Button variant="outlined" color="error" onClick={handleDelete}>
+          <Button variant="outlined" color="error" onClick={handleDelete} disabled={!(currentUser?.role === "admin" || currentUser?.role === "researcher")}>
             Удалить
           </Button>
         </Stack>

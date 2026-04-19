@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Alert, CircularProgress, Stack, Typography } from "@mui/material";
 import { api } from "../api";
@@ -10,7 +10,7 @@ function storageKey(surveyId: string) {
   return `survey_session_${surveyId}`;
 }
 
-export default function PublicSurveyRunPage(): JSX.Element {
+export default function PublicSurveyRunPage() {
   const { surveyId } = useParams<{ surveyId: string }>();
 
   const [pub, setPub] = useState<PublicSurvey | null>(null);
