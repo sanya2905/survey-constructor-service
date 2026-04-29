@@ -13,7 +13,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { getSurveys, createSurvey as apiCreateSurvey, deleteSurvey, getCurrentUser } from "../api";
+import { getSurveys, createSurvey as apiCreateSurvey, deleteSurvey, getCurrentUser, errorMessage } from "../api";
 import type { Survey } from "../api";
 
 export default function AdminSurveysListPage() {
@@ -29,8 +29,8 @@ export default function AdminSurveysListPage() {
     try {
       const data = await getSurveys();
       setSurveys(data || []);
-    } catch (e: any) {
-      setErr(e?.message ?? String(e));
+    } catch (e: unknown) {
+      setErr(errorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -43,7 +43,7 @@ export default function AdminSurveysListPage() {
 
   async function fetchCurrentUser() {
     try {
-      const u: any = await getCurrentUser();
+      const u = await getCurrentUser();
       setCurrentUser(u);
     } catch {
       const role = localStorage.getItem("auth_role");
@@ -62,8 +62,8 @@ export default function AdminSurveysListPage() {
       };
       const s = await apiCreateSurvey(payload);
       navigate(`/admin/surveys/${s.id}`);
-    } catch (e: any) {
-      setErr(e?.message ?? String(e));
+    } catch (e: unknown) {
+      setErr(errorMessage(e));
     }
   }
 
@@ -73,8 +73,8 @@ export default function AdminSurveysListPage() {
     try {
       await deleteSurvey(id);
       await load();
-    } catch (e: any) {
-      setErr(e?.message ?? String(e));
+    } catch (e: unknown) {
+      setErr(errorMessage(e));
     }
   }
 

@@ -5,7 +5,7 @@ import AdminSurveysListPage from "./pages/AdminSurveysListPage";
 import AdminSurveyEditorPage from "./pages/AdminSurveyEditorPage";
 import PublicSurveyRunPage from "./pages/PublicSurveyRunPage";
 import LoginPage from "./pages/LoginPage";
-import { setAuthToken, getCurrentUser } from "./api";
+import { getCurrentUser, setAuthToken } from "./api";
 import { useState, useEffect } from "react";
 
 
@@ -31,7 +31,7 @@ export default function App() {
         })();
         if (t) {
           try {
-            const u: any = await getCurrentUser();
+            const u = await getCurrentUser();
             if (u?.role) setAuthRole(u.role);
           } catch {
             setAuthToken(undefined);
@@ -44,10 +44,7 @@ export default function App() {
 
   function handleLogout() {
     localStorage.removeItem("auth_role");
-    try {
-      setAuthToken(undefined);
-      localStorage.removeItem("token");
-    } catch {}
+    setAuthToken(undefined);
     setAuthRole(null);
     navigate("/login");
   }
