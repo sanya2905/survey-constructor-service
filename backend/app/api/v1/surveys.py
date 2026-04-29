@@ -12,7 +12,7 @@ from app.core.db import get_db
 from app.models.survey import Survey
 from app.models.session import SurveySession
 from app.schemas.survey import SurveyCreate, SurveyOut, SurveyUpdate
-from app.core.auth import has_role
+from app.core.auth import has_role, get_current_active_user
 
 router = APIRouter(prefix="/surveys")
 
@@ -31,12 +31,12 @@ async def create_survey(payload: SurveyCreate, db: AsyncSession = Depends(get_db
     return survey
 
 @router.get("", response_model=list[SurveyOut])
-async def list_surveys(db: AsyncSession = Depends(get_db)):
+async def list_surveys(db: AsyncSession = Depends(get_db), _=Depends(get_current_active_user)):
     res = await db.execute(select(Survey).order_by(Survey.created_at.desc()))
     return list(res.scalars().all())
 
 @router.get("/{survey_id}", response_model=SurveyOut)
-async def get_survey(survey_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_survey(survey_id: uuid.UUID, db: AsyncSession = Depends(get_db), _=Depends(get_current_active_user)):
     res = await db.execute(select(Survey).where(Survey.id == survey_id))
     survey = res.scalar_one_or_none()
     if not survey:
