@@ -4,8 +4,8 @@ import { Alert, Button, CircularProgress, Stack, Typography } from "@mui/materia
 import { SurveyCreatorComponent, SurveyCreator } from "survey-creator-react";
 import "survey-core/survey-core.css";
 import "survey-creator-core/survey-creator-core.css";
-import { getSurvey, createSurvey, updateSurvey, publishSurvey, deleteSurvey, getCurrentUser } from "../api";
-import type { Survey } from "../api";
+import { getSurvey, createSurvey, updateSurvey, publishSurvey, deleteSurvey, getCurrentUser, errorMessage } from "../api";
+import type { Survey, User } from "../api";
 
 export default function AdminSurveyEditorPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,7 +19,7 @@ export default function AdminSurveyEditorPage() {
   const [err, setErr] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [creatorState, setCreatorState] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<{ role?: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | { role: string } | null>(null);
 
   const creator = useMemo(() => {
     const c = new SurveyCreator({ showLogicTab: true, autoSaveEnabled: true, autoSaveDelay: 1000 });
@@ -39,8 +39,8 @@ export default function AdminSurveyEditorPage() {
         const s = await getSurvey(id);
         setSurvey(s);
         creator.JSON = s.survey_json ?? { title: s.title ?? "Анкета", pages: [] };
-      } catch (e: any) {
-        setErr(e?.message ?? String(e));
+      } catch (e: unknown) {
+        setErr(errorMessage(e));
       } finally {
         setLoading(false);
       }
@@ -51,7 +51,7 @@ export default function AdminSurveyEditorPage() {
 
   useEffect(() => {
     const id = setInterval(() => {
-      const st = (creator as any).state as string | undefined;
+      const st = (creator as { state?: string }).state;
       setCreatorState(st ?? null);
     }, 300);
     return () => clearInterval(id);
@@ -82,30 +82,28 @@ export default function AdminSurveyEditorPage() {
 
           setInfo("Сохранено");
           callback(saveNo, true);
-        } catch (e: any) {
-          setErr(e?.message ?? String(e));
+        } catch (e: unknown) {
+          setErr(errorMessage(e));
           callback(saveNo, false);
         }
       })();
     };
-    // keep effect stable; creator is stable from useMemo
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [creator, navigate]);
 
     useEffect(() => {
       async function fetchUser() {
         try {
-          const u: any = await getCurrentUser();
+          const u = await getCurrentUser();
           setCurrentUser(u);
-          (creator as any).autoSaveEnabled = u?.role === "admin" || u?.role === "researcher";
+          creator.autoSaveEnabled = u?.role === "admin" || u?.role === "researcher";
         } catch {
           const role = localStorage.getItem("auth_role");
           if (role) {
             setCurrentUser({ role });
-            (creator as any).autoSaveEnabled = role === "admin" || role === "researcher";
+            creator.autoSaveEnabled = role === "admin" || role === "researcher";
           } else {
             setCurrentUser(null);
-            (creator as any).autoSaveEnabled = false;
+            creator.autoSaveEnabled = false;
           }
         }
       }
@@ -130,8 +128,8 @@ export default function AdminSurveyEditorPage() {
         const created = await createSurvey(payload);
         navigate(`/admin/surveys/${created.id}`);
       }
-    } catch (e: any) {
-      setErr(e?.message ?? String(e));
+    } catch (e: unknown) {
+      setErr(errorMessage(e));
     }
   }
 
@@ -156,8 +154,8 @@ export default function AdminSurveyEditorPage() {
       const res = await publishSurvey(survey.id as string);
       setSurvey(res);
       setInfo("Опубликовано");
-    } catch (e: any) {
-      setErr(e?.message ?? String(e));
+    } catch (e: unknown) {
+      setErr(errorMessage(e));
     }
   }
 
@@ -167,8 +165,8 @@ export default function AdminSurveyEditorPage() {
     try {
       await deleteSurvey(survey.id as string);
       navigate("/admin/surveys");
-    } catch (e: any) {
-      setErr(e?.message ?? String(e));
+    } catch (e: unknown) {
+      setErr(errorMessage(e));
     }
   }
 

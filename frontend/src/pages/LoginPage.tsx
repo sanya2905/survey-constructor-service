@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Box, Button, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography, InputAdornment, IconButton, FormControl, InputLabel, OutlinedInput } from "@mui/material";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
-import { login, setAuthToken, getCurrentUser } from "../api";
+import { errorMessage, login, setAuthToken, getCurrentUser } from "../api";
 
 export default function LoginPage({ onLogin }: { onLogin?: (role: string) => void }) {
   const [mode, setMode] = useState<"admin" | "researcher" | "student">("admin");
@@ -18,9 +18,9 @@ export default function LoginPage({ onLogin }: { onLogin?: (role: string) => voi
   async function handleLogin() {
     setErr(null);
     try {
-      const res: any = await login(username, password);
+      const res = await login(username, password);
       setAuthToken(res.access_token);
-      const u: any = await getCurrentUser();
+      const u = await getCurrentUser();
       if (!u) {
         setErr("Не удалось получить данные пользователя");
         return;
@@ -33,8 +33,8 @@ export default function LoginPage({ onLogin }: { onLogin?: (role: string) => voi
       localStorage.setItem("auth_role", u.role);
       onLogin?.(u.role);
       nav("/admin/surveys");
-    } catch (e: any) {
-      setErr(e?.response?.data?.detail ?? e?.message ?? String(e));
+    } catch (e: unknown) {
+      setErr(errorMessage(e));
     }
   }
 
@@ -55,7 +55,7 @@ export default function LoginPage({ onLogin }: { onLogin?: (role: string) => voi
             id="login-password"
             type={showPassword ? "text" : "password"}
             value={password}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
             endAdornment={
               <InputAdornment position="end">
                 <IconButton onClick={toggleShowPassword} edge="end" aria-label="toggle password visibility">

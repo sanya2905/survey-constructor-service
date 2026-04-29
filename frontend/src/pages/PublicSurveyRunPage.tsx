@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Alert, CircularProgress, Stack, Typography } from "@mui/material";
-import { api } from "../api";
+import { api, errorMessage } from "../api";
 import type { PublicSurvey, Session } from "../api";
 import { Model } from "survey-core";
 import { Survey as SurveyRunner } from "survey-react-ui";
@@ -67,12 +67,12 @@ export default function PublicSurveyRunPage() {
 
         try {
           await api.post(`/public/sessions/${sid}/complete`, { answers_json: sender.data });
-        } catch (e: any) {
-          setErr(e?.message ?? "Failed to complete session");
+        } catch (e: unknown) {
+          setErr(errorMessage(e, "Failed to complete session"));
         }
       });
-    } catch (e: any) {
-      setErr(e?.message ?? "Failed to load survey");
+    } catch (e: unknown) {
+      setErr(errorMessage(e, "Failed to load survey"));
     } finally {
       setLoading(false);
     }
