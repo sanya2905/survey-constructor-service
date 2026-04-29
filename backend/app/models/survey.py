@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Boolean, Integer
+from sqlalchemy import String, Boolean, Integer, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
 from app.models.base import UUIDPkMixin, TimestampMixin
 from app.core.db import Base
@@ -16,3 +16,4 @@ class Survey(UUIDPkMixin, TimestampMixin, Base):
 
     is_published: Mapped[bool] = mapped_column(Boolean, default=False)
     version: Mapped[int] = mapped_column(Integer, default=1)
+    published_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)

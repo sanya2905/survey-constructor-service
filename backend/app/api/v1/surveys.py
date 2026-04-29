@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.responses import StreamingResponse
 import io
@@ -70,6 +71,8 @@ async def publish_survey(survey_id: uuid.UUID, db: AsyncSession = Depends(get_db
     if not survey:
         raise HTTPException(404, "Survey not found")
     survey.is_published = True
+    if survey.published_at is None:
+        survey.published_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(survey)
     return survey

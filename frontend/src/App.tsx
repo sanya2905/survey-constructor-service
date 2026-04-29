@@ -54,13 +54,18 @@ export default function App() {
       <AppBar position="sticky">
         <Toolbar>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Survey Service (MVP)
+            Конструктор анкетирования
           </Typography>
 
           {authRole && (
-            <Button color="inherit" onClick={handleLogout} sx={{ ml: 2 }}>
-              Выйти
-            </Button>
+            <>
+              <Typography variant="body2" sx={{ opacity: 0.85 }}>
+                {authRole === "admin" ? "Админ" : authRole === "researcher" ? "Исследователь" : authRole === "student" ? "Студент" : authRole}
+              </Typography>
+              <Button color="inherit" onClick={handleLogout} sx={{ ml: 2 }}>
+                Выйти
+              </Button>
+            </>
           )}
         </Toolbar>
       </AppBar>
