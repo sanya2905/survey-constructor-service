@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Alert, Button, CircularProgress, Stack, Typography } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { SurveyCreatorComponent, SurveyCreator } from "survey-creator-react";
 import "survey-core/survey-core.css";
 import "survey-creator-core/survey-creator-core.css";
@@ -22,7 +23,15 @@ export default function AdminSurveyEditorPage() {
   const [currentUser, setCurrentUser] = useState<User | { role: string } | null>(null);
 
   const creator = useMemo(() => {
-    const c = new SurveyCreator({ showLogicTab: true, autoSaveEnabled: true, autoSaveDelay: 1000 });
+    const c = new SurveyCreator({
+      showLogicTab: true,
+      showPreviewTab: true,
+      // Restrict logic editing to the visual GUI only (no raw expression text input).
+      // This enforces the no-code requirement for survey authors.
+      logicAllowTextEditExpressions: false,
+      autoSaveEnabled: true,
+      autoSaveDelay: 1000,
+    });
     c.JSON = { title: "Новая анкета", pages: [] };
     return c;
   }, []);
@@ -222,6 +231,40 @@ export default function AdminSurveyEditorPage() {
 
       {err && <Alert severity="error">{err}</Alert>}
       {info && <Alert severity="success">{info}</Alert>}
+
+      <Accordion disableGutters variant="outlined">
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            💡 Как сделать вопрос зависимым от ответа (динамическая анкета)
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Stack spacing={1}>
+            <Alert severity="info" sx={{ fontSize: 13 }}>
+              Вы можете скрывать или показывать вопросы (и целые страницы) в зависимости от ответов респондента — без написания кода.
+            </Alert>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>Способ 1 — через вкладку «Логика»</Typography>
+            <Box component="ol" sx={{ pl: 2, m: 0 }}>
+              <Typography component="li" variant="body2">Откройте вкладку <b>Логика</b> вверху редактора.</Typography>
+              <Typography component="li" variant="body2">Нажмите <b>«Добавить условие»</b>.</Typography>
+              <Typography component="li" variant="body2">В поле <b>«Если»</b> выберите вопрос-триггер и значение ответа (например: «Есть ли питомцы?» → «Да»).</Typography>
+              <Typography component="li" variant="body2">В поле <b>«Тогда»</b> выберите действие: <b>«Показать вопрос»</b> или <b>«Скрыть вопрос»</b>.</Typography>
+              <Typography component="li" variant="body2">Выберите вопрос(ы), которые нужно показать или скрыть.</Typography>
+              <Typography component="li" variant="body2">Нажмите <b>«Сохранить»</b>. Правило применится автоматически при прохождении анкеты.</Typography>
+            </Box>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>Способ 2 — через свойства вопроса</Typography>
+            <Box component="ol" sx={{ pl: 2, m: 0 }}>
+              <Typography component="li" variant="body2">Кликните на вопрос, который нужно сделать зависимым.</Typography>
+              <Typography component="li" variant="body2">В правой панели найдите раздел <b>«Условия»</b>.</Typography>
+              <Typography component="li" variant="body2">В поле <b>«Показывать вопрос, если»</b> нажмите карандаш и выберите условие в визуальном конструкторе.</Typography>
+            </Box>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>Проверка</Typography>
+            <Typography variant="body2">
+              Перейдите на вкладку <b>Предварительный просмотр</b> и ответьте на вопросы — зависимые вопросы будут появляться и исчезать в реальном времени.
+            </Typography>
+          </Stack>
+        </AccordionDetails>
+      </Accordion>
 
       <SurveyCreatorComponent creator={creator} />
     </Stack>
