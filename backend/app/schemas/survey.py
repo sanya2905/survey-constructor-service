@@ -21,4 +21,5 @@ class SurveyOut(BaseModel):
     survey_json: dict
     is_published: bool
     version: int
+    created_at: datetime | None = None
     published_at: datetime | None = None
