@@ -80,14 +80,23 @@ export default function AdminSurveysListPage() {
 
   
 
-  const roleLabel = currentUser?.role === "admin" ? "Админ" : currentUser?.role === "researcher" ? "Исследователь" : currentUser?.role === "student" ? "Студент" : "";
-
   const canEdit = currentUser?.role === "admin" || currentUser?.role === "researcher";
+
+  function formatPublishedAt(dateStr?: string | null): string {
+    if (!dateStr) return "—";
+    const d = new Date(dateStr);
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    return `${day}.${month}.${year} ${hours}:${minutes}`;
+  }
 
   return (
     <div style={{ padding: 16 }}>
       <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-        <Typography variant="h5">{roleLabel ? `${roleLabel} — анкеты` : "Анкеты"}</Typography>
+        <Typography variant="h5">Анкеты</Typography>
         <Button variant="contained" onClick={handleCreate} disabled={!canEdit}>
           Создать
         </Button>
@@ -109,6 +118,7 @@ export default function AdminSurveysListPage() {
               <TableRow>
                 <TableCell>Название</TableCell>
                 <TableCell>Статус</TableCell>
+                <TableCell>Дата публикации</TableCell>
                 <TableCell>Действия</TableCell>
               </TableRow>
             </TableHead>
@@ -117,6 +127,7 @@ export default function AdminSurveysListPage() {
                 <TableRow key={s.id}>
                   <TableCell>{s.title}</TableCell>
                   <TableCell>{s.is_published ? <Chip color="success" label="published" size="small" /> : <Chip label="draft" size="small" />}</TableCell>
+                  <TableCell>{formatPublishedAt(s.published_at)}</TableCell>
                   <TableCell>
                     <Button size="small" component={Link} to={`/admin/surveys/${s.id}`}>
                       Редактировать

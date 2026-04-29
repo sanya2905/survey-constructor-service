@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from pydantic import BaseModel
 
 class SurveyCreate(BaseModel):
@@ -20,3 +21,4 @@ class SurveyOut(BaseModel):
     survey_json: dict
     is_published: bool
     version: int
+    published_at: datetime | None = None

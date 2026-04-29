@@ -39,6 +39,7 @@ export type Survey = {
   survey_json: Record<string, unknown>;
   is_published?: boolean;
   version?: number;
+  published_at?: string | null;
 };
 
 export type User = {
