@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  Accordion, AccordionDetails, AccordionSummary,
   Alert, Box, Button, Checkbox, CircularProgress,
-  FormControlLabel, Stack, TextField, Typography,
+  Dialog, DialogContent, DialogTitle, DialogActions,
+  Divider, FormControlLabel, IconButton, Stack, TextField, Tooltip, Typography,
 } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import HomeIcon from "@mui/icons-material/Home";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import BarChartIcon from "@mui/icons-material/BarChart";
+import SettingsIcon from "@mui/icons-material/Settings";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutlined";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { SurveyCreatorComponent, SurveyCreator } from "survey-creator-react";
 import "survey-core/survey-core.css";
 import "survey-creator-core/survey-creator-core.css";
@@ -14,13 +19,11 @@ import type { Survey, User } from "../api";
 
 function toDatetimeLocal(iso?: string | null): string {
   if (!iso) return "";
-  // datetime-local input expects "YYYY-MM-DDTHH:MM"
   return iso.slice(0, 16);
 }
 
 function fromDatetimeLocal(val: string): string | null {
   if (!val) return null;
-  // append seconds and Z so the backend gets an ISO 8601 UTC-aware string
   return val.length === 16 ? val + ":00Z" : val;
 }
 
@@ -36,6 +39,10 @@ export default function AdminSurveyEditorPage() {
   const [info, setInfo] = useState<string | null>(null);
   const [creatorState, setCreatorState] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | { role: string } | null>(null);
+
+  // Dialog visibility
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   // Conducting settings local state
   const [startsAt, setStartsAt] = useState("");
@@ -64,7 +71,6 @@ export default function AdminSurveyEditorPage() {
         const s = await getSurvey(id);
         setSurvey(s);
         creator.JSON = s.survey_json ?? { title: s.title ?? "Анкета", pages: [] };
-        // Populate conducting fields
         setStartsAt(toDatetimeLocal(s.starts_at));
         setEndsAt(toDatetimeLocal(s.ends_at));
         setMaxResponses(s.max_responses != null ? String(s.max_responses) : "");
@@ -105,7 +111,6 @@ export default function AdminSurveyEditorPage() {
             const created = await createSurvey(payload);
             navigate(`/admin/surveys/${created.id}`);
           }
-          setInfo("Сохранено");
           callback(saveNo, true);
         } catch (e: unknown) {
           setErr(errorMessage(e));
@@ -169,6 +174,7 @@ export default function AdminSurveyEditorPage() {
       const updated = await updateSurvey(survey.id as string, payload);
       setSurvey(updated);
       setInfo("Настройки проведения сохранены");
+      setSettingsOpen(false);
     } catch (e: unknown) { setErr(errorMessage(e)); }
   }
 
@@ -200,90 +206,171 @@ export default function AdminSurveyEditorPage() {
   if (loading) return <CircularProgress />;
 
   return (
-    <Stack spacing={2} sx={{ padding: 2 }}>
+    <Stack spacing={0} sx={{ height: "100%", minHeight: 0 }}>
       {/* ── Top bar ── */}
-      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <Button variant="text" onClick={() => navigate("/admin/surveys")}>Назад</Button>
-          <Stack>
-            <Typography variant="h5">Редактор анкеты</Typography>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          px: 2,
+          py: 1,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          bgcolor: "background.paper",
+          gap: 1,
+        }}
+      >
+        {/* Left: back + title */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+          <Tooltip title="Назад к списку анкет">
+            <IconButton size="small" onClick={() => navigate("/admin/surveys")} sx={{ color: "text.secondary" }}>
+              <ArrowBackIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="h6" noWrap sx={{ lineHeight: 1.2 }}>
+              Редактор анкеты
+            </Typography>
             {survey && (
-              <Typography variant="body2" color="text.secondary">
-                ID: {survey.id} • {survey.is_published ? "опубликовано" : "черновик"} • v{survey.version}
+              <Typography variant="caption" color="text.secondary" noWrap>
+                ID: {survey.id} · {survey.is_published ? "опубликовано" : "черновик"} · v{survey.version}
               </Typography>
             )}
-          </Stack>
-        </Stack>
+          </Box>
+        </Box>
 
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <Button variant="outlined" onClick={() => window.location.reload()}>Обновить</Button>
-          <Button variant="outlined" onClick={() => navigate("/admin/surveys")}>Главная</Button>
+        {/* Right: action buttons */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexShrink: 0 }}>
+          {/* Utility icon buttons */}
+          <Tooltip title="Главная (список анкет)">
+            <IconButton size="small" onClick={() => navigate("/admin/surveys")} sx={{ color: "text.secondary" }}>
+              <HomeIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Обновить страницу">
+            <IconButton size="small" onClick={() => window.location.reload()} sx={{ color: "text.secondary" }}>
+              <RefreshIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           {survey?.id && (
-            <Button variant="outlined" onClick={() => navigate(`/admin/surveys/${survey.id}/stats`)}>
-              Статистика
-            </Button>
+            <Tooltip title="Статистика">
+              <IconButton
+                size="small"
+                onClick={() => navigate(`/admin/surveys/${survey.id}/stats`)}
+                sx={{ color: "text.secondary" }}
+              >
+                <BarChartIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           )}
-          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-            <Button variant="contained" onClick={handleSave} disabled={!canEdit}>Сохранить</Button>
-            {creatorState === "saving" && <CircularProgress size={18} />}
-            {creatorState === "saved" && <Typography color="success.main">Сохранено</Typography>}
-            {creatorState === "modified" && <Typography color="text.secondary">Изменено</Typography>}
-          </Stack>
-          <Button color="success" variant="contained" onClick={handlePublish}
-            disabled={!!survey?.is_published || !canEdit}>
+
+          <Tooltip title="Настройки проведения (сроки, лимиты, анонимность)">
+            <IconButton size="small" onClick={() => setSettingsOpen(true)} sx={{ color: "text.secondary" }}>
+              <SettingsIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Справка: динамическая анкета">
+            <IconButton size="small" onClick={() => setHelpOpen(true)} sx={{ color: "text.secondary" }}>
+              <HelpOutlineIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+
+          <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+
+          {/* Save — show spinner while autosaving */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleSave}
+              disabled={!canEdit}
+              sx={{ minWidth: 100 }}
+            >
+              {creatorState === "saving" ? (
+                <CircularProgress size={16} sx={{ color: "inherit" }} />
+              ) : (
+                "Сохранить"
+              )}
+            </Button>
+          </Box>
+
+          <Button
+            color="success"
+            variant="contained"
+            size="small"
+            onClick={handlePublish}
+            disabled={!!survey?.is_published || !canEdit}
+            sx={{ minWidth: 110 }}
+          >
             Опубликовать
           </Button>
-          <Button variant="outlined" color="error" onClick={handleDelete} disabled={!canEdit}>
+
+          <Button
+            variant="outlined"
+            color="error"
+            size="small"
+            onClick={handleDelete}
+            disabled={!canEdit}
+          >
             Удалить
           </Button>
-        </Stack>
-      </Stack>
+        </Box>
+      </Box>
 
-      {err && <Alert severity="error">{err}</Alert>}
-      {info && <Alert severity="success">{info}</Alert>}
+      {/* ── Alerts ── */}
+      {(err || info) && (
+        <Box sx={{ px: 2, pt: 1 }}>
+          {err && <Alert severity="error" onClose={() => setErr(null)}>{err}</Alert>}
+          {info && <Alert severity="success" onClose={() => setInfo(null)}>{info}</Alert>}
+        </Box>
+      )}
 
-      {/* ── Conducting settings (ТР-2, ТР-5, ТР-6) ── */}
-      <Accordion disableGutters variant="outlined">
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            ⚙️ Настройки проведения анкетирования (сроки, лимиты, анонимность)
-          </Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-          <Stack spacing={2}>
-            <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
-              <TextField
-                label="Начало проведения"
-                type="datetime-local"
-                size="small"
-                slotProps={{ inputLabel: { shrink: true } }}
-                value={startsAt}
-                onChange={(e) => setStartsAt(e.target.value)}
-                disabled={!canEdit}
-                helperText="До этого времени анкета недоступна респондентам"
-              />
-              <TextField
-                label="Окончание проведения"
-                type="datetime-local"
-                size="small"
-                slotProps={{ inputLabel: { shrink: true } }}
-                value={endsAt}
-                onChange={(e) => setEndsAt(e.target.value)}
-                disabled={!canEdit}
-                helperText="После этого времени новые сессии не принимаются"
-              />
-              <TextField
-                label="Макс. число ответов"
-                type="number"
-                size="small"
-                sx={{ width: 200 }}
-                value={maxResponses}
-                onChange={(e) => setMaxResponses(e.target.value)}
-                disabled={!canEdit}
-                slotProps={{ htmlInput: { min: 1 } }}
-                helperText="Оставьте пустым — без ограничений"
-              />
-            </Stack>
+      {/* ── Survey Creator ── */}
+      <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+        <SurveyCreatorComponent creator={creator} />
+      </Box>
+
+      {/* ── Settings Dialog ── */}
+      <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Настройки проведения анкетирования</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <TextField
+              label="Начало проведения"
+              type="datetime-local"
+              size="small"
+              slotProps={{ inputLabel: { shrink: true } }}
+              value={startsAt}
+              onChange={(e) => setStartsAt(e.target.value)}
+              disabled={!canEdit}
+              helperText="До этого времени анкета недоступна респондентам"
+              fullWidth
+            />
+            <TextField
+              label="Окончание проведения"
+              type="datetime-local"
+              size="small"
+              slotProps={{ inputLabel: { shrink: true } }}
+              value={endsAt}
+              onChange={(e) => setEndsAt(e.target.value)}
+              disabled={!canEdit}
+              helperText="После этого времени новые сессии не принимаются"
+              fullWidth
+            />
+            <TextField
+              label="Макс. число ответов"
+              type="number"
+              size="small"
+              value={maxResponses}
+              onChange={(e) => setMaxResponses(e.target.value)}
+              disabled={!canEdit}
+              slotProps={{ htmlInput: { min: 1 } }}
+              helperText="Оставьте пустым — без ограничений"
+              fullWidth
+            />
             <FormControlLabel
               control={
                 <Checkbox
@@ -294,24 +381,25 @@ export default function AdminSurveyEditorPage() {
               }
               label="Разрешить анонимное прохождение (без идентификатора респондента)"
             />
-            <Box>
-              <Button variant="outlined" size="small" onClick={handleSaveConducting} disabled={!canEdit || !survey?.id}>
-                Сохранить настройки проведения
-              </Button>
-            </Box>
           </Stack>
-        </AccordionDetails>
-      </Accordion>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSettingsOpen(false)}>Отмена</Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveConducting}
+            disabled={!canEdit || !survey?.id}
+          >
+            Сохранить
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-      {/* ── Conditional logic guide ── */}
-      <Accordion disableGutters variant="outlined">
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            💡 Как сделать вопрос зависимым от ответа (динамическая анкета)
-          </Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-          <Stack spacing={1}>
+      {/* ── Help Dialog ── */}
+      <Dialog open={helpOpen} onClose={() => setHelpOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Справка: динамическая анкета</DialogTitle>
+        <DialogContent>
+          <Stack spacing={1.5} sx={{ pt: 1 }}>
             <Alert severity="info" sx={{ fontSize: 13 }}>
               Вы можете скрывать или показывать вопросы (и целые страницы) в зависимости от ответов респондента — без написания кода.
             </Alert>
@@ -332,10 +420,11 @@ export default function AdminSurveyEditorPage() {
               Перейдите на вкладку <b>Предварительный просмотр</b> — зависимые вопросы работают в реальном времени.
             </Typography>
           </Stack>
-        </AccordionDetails>
-      </Accordion>
-
-      <SurveyCreatorComponent creator={creator} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setHelpOpen(false)} variant="contained">Понятно</Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }
