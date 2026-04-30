@@ -1,10 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Alert, Box, CircularProgress, LinearProgress, Stack, Typography } from "@mui/material";
+import {
+  Alert, Box, Card, CardContent, CircularProgress,
+  LinearProgress, Typography,
+} from "@mui/material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { api, errorMessage } from "../api";
 import type { PublicSurvey, Session } from "../api";
 import { Model } from "survey-core";
 import { Survey as SurveyRunner } from "survey-react-ui";
+import UnnLogo from "../assets/UnnLogo";
 
 function storageKey(surveyId: string) {
   return `survey_session_${surveyId}`;
@@ -28,18 +33,15 @@ export default function PublicSurveyRunPage() {
     setErr(null);
 
     try {
-      // 1) load published survey — may 403 if not started / ended
       const sres = await api.get<PublicSurvey>(`/public/surveys/${surveyId}`);
       setPub(sres.data);
 
       const surveyJson = sres.data.survey_json || { pages: [] };
       model.fromJSON(surveyJson);
 
-      // ТР-3: enable SurveyJS built-in progress bar
       model.showProgressBar = "top";
       model.progressBarType = "questions";
 
-      // 2) session resume/start
       const existing = localStorage.getItem(storageKey(surveyId));
       let activeSession: Session | null = null;
 
@@ -53,13 +55,11 @@ export default function PublicSurveyRunPage() {
           }
           setProgress(ses.data.progress_pct ?? 0);
         } catch {
-          // stale session id — start fresh
           localStorage.removeItem(storageKey(surveyId));
         }
       }
 
       if (!activeSession) {
-        // ТР-2: pass respondent_id if survey requires it (here we use null for anonymous)
         const created = await api.post<Session>(`/public/surveys/${surveyId}/sessions`, { respondent_id: null });
         activeSession = created.data;
         localStorage.setItem(storageKey(surveyId), created.data.id);
@@ -67,11 +67,9 @@ export default function PublicSurveyRunPage() {
       }
       setSession(activeSession);
 
-      // 3) autosave hooks — save answers + current page + progress (ТР-3, ТР-8)
       model.onValueChanged.add(() => { updateProgress(); scheduleSave(); });
       model.onCurrentPageChanged.add(() => { updateProgress(); scheduleSave(); });
 
-      // 4) complete hook
       model.onComplete.add(async (sender) => {
         if (!surveyId) return;
         const sid = localStorage.getItem(storageKey(surveyId));
@@ -86,7 +84,6 @@ export default function PublicSurveyRunPage() {
       });
 
     } catch (e: unknown) {
-      // Friendly messages for 403 conducting-time errors
       const msg = errorMessage(e, "Ошибка загрузки анкеты");
       if (msg.includes("not started")) setErr("Анкета ещё не началась. Попробуйте позже.");
       else if (msg.includes("ended")) setErr("Сбор ответов завершён. Анкета больше не доступна.");
@@ -98,7 +95,6 @@ export default function PublicSurveyRunPage() {
   }
 
   function updateProgress() {
-    // Calculate answered questions / total visible questions
     const visibleQuestions = model.getAllQuestions(false).filter((q) => q.isVisible);
     const answered = visibleQuestions.filter((q) => !q.isEmpty()).length;
     const total = visibleQuestions.length;
@@ -136,39 +132,145 @@ export default function PublicSurveyRunPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [surveyId]);
 
-  if (loading) return <CircularProgress />;
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100svh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: "background.default",
+        }}
+      >
+        <CircularProgress color="primary" />
+      </Box>
+    );
+  }
 
-  if (err) return <Alert severity="error">{err}</Alert>;
+  if (err) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100svh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: "background.default",
+          px: 2,
+        }}
+      >
+        <Card elevation={0} sx={{ maxWidth: 480, width: "100%", border: "1px solid", borderColor: "divider" }}>
+          <CardContent sx={{ p: 3, textAlign: "center" }}>
+            <Alert severity="info" sx={{ textAlign: "left" }}>{err}</Alert>
+            <Typography variant="body2" sx={{ mt: 2, color: "text.secondary", fontSize: 12 }}>
+              ННГУ им. Лобачевского — Система анкетирования
+            </Typography>
+          </CardContent>
+        </Card>
+      </Box>
+    );
+  }
 
   return (
-    <Stack spacing={1}>
-      <Typography variant="h5">{pub?.title ?? "Анкета"}</Typography>
-      {pub?.description && (
-        <Typography variant="body2" color="text.secondary">{pub.description}</Typography>
-      )}
-
-      {/* ТР-8: progress indicator */}
-      {!session?.is_completed && progress > 0 && (
-        <Box sx={{ width: "100%" }}>
-          <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 0.5 }}>
-            <LinearProgress variant="determinate" value={progress} sx={{ flexGrow: 1, height: 8, borderRadius: 4 }} />
-            <Typography variant="caption" color="text.secondary">{progress}%</Typography>
-          </Stack>
+    <Box sx={{ minHeight: "100svh", bgcolor: "background.default" }}>
+      {/* Public top bar */}
+      <Box
+        sx={{
+          bgcolor: "white",
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          px: 3,
+          py: 1.5,
+        }}
+      >
+        <Box sx={{ display: "flex", flexDirection: "row", gap: 1.5, alignItems: "center" }}>
+          <Box
+            sx={{
+              width: 30,
+              height: 30,
+              bgcolor: "primary.main",
+              borderRadius: 1.5,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+            }}
+          >
+            <UnnLogo width={18} height={18} />
+          </Box>
+          <Typography sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>
+            Анкетирование
+          </Typography>
+          <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
+            · ННГУ им. Лобачевского
+          </Typography>
         </Box>
-      )}
+      </Box>
 
-      {session?.is_completed && (
-        <Alert severity="success">Анкета завершена. Спасибо за участие!</Alert>
-      )}
+      <Box sx={{ maxWidth: 720, mx: "auto", px: 2, py: 4 }}>
+        {/* Survey header */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h5" sx={{ color: "text.primary", mb: 0.5 }}>
+            {pub?.title ?? "Анкета"}
+          </Typography>
+          {pub?.description && (
+            <Typography variant="body2">{pub.description}</Typography>
+          )}
+          {pub?.ends_at && !session?.is_completed && (
+            <Typography variant="caption" sx={{ color: "text.secondary", mt: 0.5, display: "block" }}>
+              Доступна до: {new Date(pub.ends_at).toLocaleString("ru-RU")}
+            </Typography>
+          )}
+        </Box>
 
-      {/* ТР-5: show countdown if survey has an end time */}
-      {pub?.ends_at && !session?.is_completed && (
-        <Typography variant="caption" color="text.secondary">
-          Анкета доступна до: {new Date(pub.ends_at).toLocaleString("ru-RU")}
-        </Typography>
-      )}
+        {/* Progress bar */}
+        {!session?.is_completed && progress > 0 && (
+          <Box sx={{ mb: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                gap: 1,
+                alignItems: "center",
+                mb: 0.75,
+              }}
+            >
+              <LinearProgress
+                variant="determinate"
+                value={progress}
+                sx={{ flexGrow: 1, height: 8, borderRadius: 4 }}
+                color="primary"
+              />
+              <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500, minWidth: 32 }}>
+                {progress}%
+              </Typography>
+            </Box>
+          </Box>
+        )}
 
-      <SurveyRunner model={model} />
-    </Stack>
+        {/* Completed state */}
+        {session?.is_completed && (
+          <Card elevation={0} sx={{ mb: 3, border: "1px solid", borderColor: "rgba(5,150,105,0.3)", bgcolor: "rgba(5,150,105,0.05)" }}>
+            <CardContent sx={{ p: "16px !important" }}>
+              <Box sx={{ display: "flex", flexDirection: "row", gap: 1.5, alignItems: "center" }}>
+                <CheckCircleIcon sx={{ color: "#059669", fontSize: 24 }} />
+                <Box>
+                  <Typography sx={{ fontWeight: 600, color: "#059669", fontSize: 15 }}>
+                    Анкета завершена
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    Спасибо за участие!
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Survey runner */}
+        <SurveyRunner model={model} />
+      </Box>
+    </Box>
   );
 }
