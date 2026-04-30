@@ -16,9 +16,12 @@ docker compose up --build
 Frontend:
 
 ```bash
+docker compose up --build -d
 cd frontend
 npm run dev
 ```
+
+Vite проксирует `/api` на API на хосте (`localhost:8001`), поэтому контейнер `survey-api` должен быть запущен и с проброшенным портом `8001` (см. `docker-compose.yml`). Без этого запросы к `/api/v1/...` дадут **502 Bad Gateway**.
 
 Откройте браузер на http://localhost:5173/ и используйте `/admin/surveys` для создания анкеты, `/s/<survey_id>` для прохождения.
 
