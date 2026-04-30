@@ -17,3 +17,9 @@ class Survey(UUIDPkMixin, TimestampMixin, Base):
     is_published: Mapped[bool] = mapped_column(Boolean, default=False)
     version: Mapped[int] = mapped_column(Integer, default=1)
     published_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # ── Conducting settings (ТР-2, ТР-5, ТР-6) ──────────────────────────────
+    starts_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    ends_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    max_responses: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    allow_anonymous: Mapped[bool] = mapped_column(Boolean, default=True)
