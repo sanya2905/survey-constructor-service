@@ -23,7 +23,7 @@ jobs:
       - name: Wait for API
         run: |
           for i in {1..60}; do
-            if curl -sS http://localhost:8001/healthz | grep -q ok; then
+            if curl -sS http://localhost:80/healthz | grep -q ok; then
               echo "api ready"; break
             fi
             sleep 1
@@ -31,4 +31,4 @@ jobs:
 
       - name: Run E2E smoke script
         run: |
-          python3 scripts/e2e_smoke.py
+          python3 scripts/e2e_smoke.py --api http://localhost:80/api/v1
