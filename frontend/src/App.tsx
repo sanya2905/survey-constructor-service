@@ -3,6 +3,7 @@ import { AppBar, Box, Button, Container, Toolbar, Typography } from "@mui/materi
 
 import AdminSurveysListPage from "./pages/AdminSurveysListPage";
 import AdminSurveyEditorPage from "./pages/AdminSurveyEditorPage";
+import SurveyStatsPage from "./pages/SurveyStatsPage";
 import PublicSurveyRunPage from "./pages/PublicSurveyRunPage";
 import LoginPage from "./pages/LoginPage";
 import { getCurrentUser, setAuthToken } from "./api";
@@ -78,6 +79,7 @@ export default function App() {
 
             <Route path="/admin/surveys" element={authRole ? <AdminSurveysListPage /> : <Navigate to="/login" replace />} />
             <Route path="/admin/surveys/:id" element={authRole ? <AdminSurveyEditorPage /> : <Navigate to="/login" replace />} />
+            <Route path="/admin/surveys/:id/stats" element={authRole ? <SurveyStatsPage /> : <Navigate to="/login" replace />} />
 
             {/* Public runner */}
             <Route path="/s/:surveyId" element={<PublicSurveyRunPage />} />

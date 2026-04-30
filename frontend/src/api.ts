@@ -41,6 +41,21 @@ export type Survey = {
   version?: number;
   created_at?: string | null;
   published_at?: string | null;
+  // Conducting settings
+  starts_at?: string | null;
+  ends_at?: string | null;
+  max_responses?: number | null;
+  allow_anonymous?: boolean;
+};
+
+export type SurveyStats = {
+  survey_id: string;
+  total_sessions: number;
+  completed_sessions: number;
+  in_progress_sessions: number;
+  completion_rate: number;
+  avg_progress_pct: number;
+  responses_by_question: Record<string, Record<string, number>>;
 };
 
 export type User = {
@@ -53,6 +68,19 @@ export type User = {
 export type AuthToken = {
   access_token: string;
   token_type?: string;
+};
+
+export type Session = {
+  id: string;
+  survey_id: string;
+  respondent_id?: string | null;
+  answers_json: Record<string, unknown>;
+  is_completed: boolean;
+  current_page?: number;
+  progress_pct?: number;
+  last_saved_at?: string | null;
+  completed_at?: string | null;
+  created_at?: string | null;
 };
 
 export function errorMessage(error: unknown, fallback = "Request failed") {
@@ -108,6 +136,19 @@ export async function publishSurvey(id: string): Promise<Survey> {
   return res.data;
 }
 
+export async function getSurveyStats(id: string): Promise<SurveyStats> {
+  const res = await api.get(`/surveys/${id}/stats`);
+  return res.data;
+}
+
+export async function getSurveySessions(
+  id: string,
+  opts?: { respondent_id?: string; completed_only?: boolean }
+): Promise<Session[]> {
+  const res = await api.get(`/surveys/${id}/sessions`, { params: opts });
+  return res.data;
+}
+
 export async function getCurrentUser(): Promise<User> {
   const res = await api.get("/auth/me");
   return res.data;
@@ -124,8 +165,17 @@ export async function startSession(survey_id: string, respondent_id?: string): P
   return res.data;
 }
 
-export async function saveProgress(session_id: string, answers_json: Record<string, unknown>): Promise<Session> {
-  const res = await api.put(`/public/sessions/${session_id}`, { answers_json });
+export async function saveProgress(
+  session_id: string,
+  answers_json: Record<string, unknown>,
+  current_page?: number,
+  progress_pct?: number,
+): Promise<Session> {
+  const res = await api.put(`/public/sessions/${session_id}`, {
+    answers_json,
+    current_page: current_page ?? 0,
+    progress_pct: progress_pct ?? 0,
+  });
   return res.data;
 }
 
@@ -140,12 +190,6 @@ export type PublicSurvey = {
   description?: string | null;
   survey_json: Record<string, unknown>;
   version: number;
-};
-
-export type Session = {
-  id: string;
-  survey_id: string;
-  respondent_id?: string | null;
-  answers_json: Record<string, unknown>;
-  is_completed: boolean;
+  allow_anonymous?: boolean;
+  ends_at?: string | null;
 };
