@@ -200,7 +200,7 @@ export default function AdminSurveysListPage() {
                           "&:hover": { color: "primary.main" },
                         }}
                         component={Link}
-                        to={`/admin/surveys/${s.id}`}
+                        to={s.is_published ? `/admin/surveys/${s.id}/stats` : `/admin/surveys/${s.id}`}
                         style={{ textDecoration: "none" }}
                       >
                         {s.title}
