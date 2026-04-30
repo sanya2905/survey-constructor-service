@@ -19,11 +19,22 @@ services:
     build: ./backend
     env_file:
       - ./backend/.env
-    ports:
-      - "8001:8000"
+    # Port 8000 is intentionally NOT exposed to the host — the frontend nginx
+    # proxies /api/* to this service internally.  If you need direct API
+    # access during development, uncomment the line below.
+    # ports:
+    #   - "8001:8000"
     depends_on:
       survey-db:
         condition: service_healthy
+    restart: on-failure
+
+  survey-frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - survey-api
     restart: on-failure
 
 volumes:
