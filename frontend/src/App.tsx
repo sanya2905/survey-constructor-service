@@ -1,10 +1,12 @@
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import {
   AppBar, Avatar, Box, Button, Chip, Container,
-  Divider, Stack, Toolbar, Tooltip, Typography,
+  Divider, IconButton, Stack, Toolbar, Tooltip, Typography,
 } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
 import AssignmentIcon from "@mui/icons-material/Assignment";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from "@mui/icons-material/LightMode";
 
 import AdminSurveysListPage from "./pages/AdminSurveysListPage";
 import AdminSurveyEditorPage from "./pages/AdminSurveyEditorPage";
@@ -14,6 +16,7 @@ import LoginPage from "./pages/LoginPage";
 import { getCurrentUser, setAuthToken } from "./api";
 import { useState, useEffect } from "react";
 import UnnLogo from "./assets/UnnLogo";
+import { useThemeMode } from "./ThemeContext";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Администратор",
@@ -32,6 +35,7 @@ export default function App() {
   const [authRole, setAuthRole] = useState<string | null>(() => localStorage.getItem("auth_role"));
   const navigate = useNavigate();
   const location = useLocation();
+  const { mode, toggleTheme } = useThemeMode();
 
   useEffect(() => {
     const onStorage = () => setAuthRole(localStorage.getItem("auth_role"));
@@ -137,6 +141,18 @@ export default function App() {
             )}
 
             <Box sx={{ flexGrow: 1 }} />
+
+            {/* Theme toggle */}
+            <Tooltip title={mode === "light" ? "Тёмная тема" : "Светлая тема"}>
+              <IconButton
+                onClick={toggleTheme}
+                size="small"
+                sx={{ color: "text.secondary" }}
+                aria-label="toggle theme"
+              >
+                {mode === "light" ? <DarkModeIcon fontSize="small" /> : <LightModeIcon fontSize="small" />}
+              </IconButton>
+            </Tooltip>
 
             {/* Right side: role chip + logout */}
             {authRole && (
