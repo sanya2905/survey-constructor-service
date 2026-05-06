@@ -1,8 +1,25 @@
-import axios from "axios";
+/**
+ * API client layer — thin wrapper over axios.
+ *
+ * Mirrors the utility-layer pattern from the ARM-researcher module (api.js):
+ * - 30-second request timeout
+ * - Automatic Bearer token attachment
+ * - Response interceptor: clears auth state on 401 and redirects to /login
+ * - Centralised error-message helper
+ * - Typed helpers for every backend endpoint
+ */
+
+import axios, { type AxiosRequestConfig } from "axios";
 
 const API_PREFIX = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
 
-export const api = axios.create({ baseURL: API_PREFIX, headers: { "Content-Type": "application/json" } });
+export const api = axios.create({
+  baseURL: API_PREFIX,
+  headers: { "Content-Type": "application/json" },
+  timeout: 30_000,
+});
+
+// ── Token management ──────────────────────────────────────────────────────────
 
 export function setAuthToken(token?: string) {
   if (token) {
@@ -22,7 +39,7 @@ export function setAuthToken(token?: string) {
   }
 }
 
-// restore token from storage if present
+// Restore token from storage on module load.
 const _saved = (() => {
   try {
     return localStorage.getItem("token");
@@ -31,6 +48,55 @@ const _saved = (() => {
   }
 })();
 if (_saved) setAuthToken(_saved);
+
+// ── Request interceptor ───────────────────────────────────────────────────────
+// Always attach the most recent token even if it was set after module load.
+api.interceptors.request.use((config) => {
+  const token = (() => {
+    try { return localStorage.getItem("token"); } catch { return null; }
+  })();
+  if (token && !config.headers["Authorization"]) {
+    config.headers["Authorization"] = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// ── Response interceptor ──────────────────────────────────────────────────────
+// On 401, clear credentials and redirect to /login so the user never gets
+// stuck with an invisible auth failure.
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      try {
+        localStorage.removeItem("token");
+        localStorage.removeItem("auth_role");
+      } catch {
+        // ignore
+      }
+      delete api.defaults.headers.common["Authorization"];
+      // Only redirect if we are in a browser context and not already on /login.
+      if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+
+// ── Error helper ──────────────────────────────────────────────────────────────
+
+export function errorMessage(error: unknown, fallback = "Request failed"): string {
+  if (axios.isAxiosError(error)) {
+    const detail = (error.response?.data as { detail?: unknown } | undefined)?.detail;
+    if (typeof detail === "string") return detail;
+    if (error.code === "ECONNABORTED") return "Request timed out — please try again.";
+    return error.message || fallback;
+  }
+  return error instanceof Error ? error.message : String(error);
+}
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 export type Survey = {
   id?: string;
@@ -41,7 +107,6 @@ export type Survey = {
   version?: number;
   created_at?: string | null;
   published_at?: string | null;
-  // Conducting settings
   starts_at?: string | null;
   ends_at?: string | null;
   max_responses?: number | null;
@@ -83,14 +148,17 @@ export type Session = {
   created_at?: string | null;
 };
 
-export function errorMessage(error: unknown, fallback = "Request failed") {
-  if (axios.isAxiosError(error)) {
-    const detail = (error.response?.data as { detail?: unknown } | undefined)?.detail;
-    if (typeof detail === "string") return detail;
-    return error.message || fallback;
-  }
-  return error instanceof Error ? error.message : String(error);
-}
+export type PublicSurvey = {
+  id: string;
+  title: string;
+  description?: string | null;
+  survey_json: Record<string, unknown>;
+  version: number;
+  allow_anonymous?: boolean;
+  ends_at?: string | null;
+};
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
 
 export async function login(username: string, password: string): Promise<AuthToken> {
   const params = new URLSearchParams();
@@ -102,10 +170,22 @@ export async function login(username: string, password: string): Promise<AuthTok
   return res.data;
 }
 
-export async function register(payload: { username: string; password: string; role?: string; email?: string }) {
+export async function register(payload: {
+  username: string;
+  password: string;
+  role?: string;
+  email?: string;
+}): Promise<User> {
   const res = await api.post("/auth/register", payload);
   return res.data;
 }
+
+export async function getCurrentUser(): Promise<User> {
+  const res = await api.get("/auth/me");
+  return res.data;
+}
+
+// ── Surveys ───────────────────────────────────────────────────────────────────
 
 export async function getSurveys(): Promise<Survey[]> {
   const res = await api.get("/surveys");
@@ -127,8 +207,8 @@ export async function updateSurvey(id: string, payload: Partial<Survey>): Promis
   return res.data;
 }
 
-export async function deleteSurvey(id: string) {
-  return api.delete(`/surveys/${id}`);
+export async function deleteSurvey(id: string): Promise<void> {
+  await api.delete(`/surveys/${id}`);
 }
 
 export async function publishSurvey(id: string): Promise<Survey> {
@@ -143,24 +223,23 @@ export async function getSurveyStats(id: string): Promise<SurveyStats> {
 
 export async function getSurveySessions(
   id: string,
-  opts?: { respondent_id?: string; completed_only?: boolean }
+  opts?: { respondent_id?: string; completed_only?: boolean },
 ): Promise<Session[]> {
   const res = await api.get(`/surveys/${id}/sessions`, { params: opts });
   return res.data;
 }
 
-export async function getCurrentUser(): Promise<User> {
-  const res = await api.get("/auth/me");
-  return res.data;
-}
+// ── Public (unauthenticated) ──────────────────────────────────────────────────
 
-// public endpoints
 export async function getPublicSurvey(id: string): Promise<PublicSurvey> {
   const res = await api.get(`/public/surveys/${id}`);
   return res.data;
 }
 
-export async function startSession(survey_id: string, respondent_id?: string): Promise<Session> {
+export async function startSession(
+  survey_id: string,
+  respondent_id?: string,
+): Promise<Session> {
   const res = await api.post(`/public/surveys/${survey_id}/sessions`, { respondent_id });
   return res.data;
 }
@@ -179,17 +258,17 @@ export async function saveProgress(
   return res.data;
 }
 
-export async function completeSession(session_id: string, answers_json: Record<string, unknown>): Promise<Session> {
+export async function completeSession(
+  session_id: string,
+  answers_json: Record<string, unknown>,
+): Promise<Session> {
   const res = await api.post(`/public/sessions/${session_id}/complete`, { answers_json });
   return res.data;
 }
 
-export type PublicSurvey = {
-  id: string;
-  title: string;
-  description?: string | null;
-  survey_json: Record<string, unknown>;
-  version: number;
-  allow_anonymous?: boolean;
-  ends_at?: string | null;
-};
+// ── Generic request helper (for custom calls) ─────────────────────────────────
+
+export async function request<T = unknown>(config: AxiosRequestConfig): Promise<T> {
+  const res = await api.request<T>(config);
+  return res.data;
+}
