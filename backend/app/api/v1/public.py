@@ -1,22 +1,18 @@
+"""Public (unauthenticated) survey endpoints.
+
+These endpoints are used by respondents who fill in published surveys.
+All domain logic is handled by the service layer.
+"""
+
 import uuid
-from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException
+
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 
 from app.core.db import get_db
-from app.models.survey import Survey
-from app.models.session import SurveySession
 from app.schemas.session import SessionCreate, SessionOut, SessionSave, SessionComplete
-
-
-def _validate_answers(answers_json: dict) -> None:
-    if not isinstance(answers_json, dict):
-        raise HTTPException(400, "answers_json must be an object")
-    for k in answers_json.keys():
-        if not isinstance(k, str):
-            raise HTTPException(400, "answers_json keys must be strings")
-
+from app.services.survey_service import SurveyService
+from app.services.session_service import SessionService
 
 def _aware_utc(dt: datetime) -> datetime:
     if dt.tzinfo is None:
@@ -64,9 +60,13 @@ router = APIRouter(prefix="/public")
 
 @router.get("/surveys/{survey_id}")
 async def get_public_survey(survey_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+<<<<<<< HEAD
     res = await db.execute(select(Survey).where(Survey.id == survey_id))
     survey = res.scalar_one_or_none()
     _check_survey_available(survey)
+=======
+    survey = await SurveyService(db).get_public_survey(survey_id)
+>>>>>>> 3481eeafdc4a500f97d3d3d89d0bb47ae6d43927
     return {
         "id": str(survey.id),
         "title": survey.title,
@@ -82,6 +82,7 @@ async def get_public_survey(survey_id: uuid.UUID, db: AsyncSession = Depends(get
 
 
 @router.post("/surveys/{survey_id}/sessions", response_model=SessionOut)
+<<<<<<< HEAD
 async def start_session(survey_id: uuid.UUID, payload: SessionCreate, db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(Survey).where(Survey.id == survey_id))
     survey = res.scalar_one_or_none()
@@ -115,18 +116,23 @@ async def start_session(survey_id: uuid.UUID, payload: SessionCreate, db: AsyncS
     await db.commit()
     await db.refresh(session)
     return session
+=======
+async def start_session(
+    survey_id: uuid.UUID,
+    payload: SessionCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    return await SessionService(db).start_session(survey_id, payload.respondent_id)
+>>>>>>> 3481eeafdc4a500f97d3d3d89d0bb47ae6d43927
 
 
 @router.get("/sessions/{session_id}", response_model=SessionOut)
 async def get_session(session_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    res = await db.execute(select(SurveySession).where(SurveySession.id == session_id))
-    session = res.scalar_one_or_none()
-    if not session:
-        raise HTTPException(404, "Session not found")
-    return session
+    return await SessionService(db).get_session(session_id)
 
 
 @router.put("/sessions/{session_id}", response_model=SessionOut)
+<<<<<<< HEAD
 async def save_progress(session_id: uuid.UUID, payload: SessionSave, db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(SurveySession).where(SurveySession.id == session_id))
     session = res.scalar_one_or_none()
@@ -155,21 +161,20 @@ async def save_progress(session_id: uuid.UUID, payload: SessionSave, db: AsyncSe
     await db.commit()
     await db.refresh(session)
     return session
+=======
+async def save_progress(
+    session_id: uuid.UUID,
+    payload: SessionSave,
+    db: AsyncSession = Depends(get_db),
+):
+    return await SessionService(db).save_progress(session_id, payload)
+>>>>>>> 3481eeafdc4a500f97d3d3d89d0bb47ae6d43927
 
 
 @router.post("/sessions/{session_id}/complete", response_model=SessionOut)
-async def complete_session(session_id: uuid.UUID, payload: SessionComplete, db: AsyncSession = Depends(get_db)):
-    res = await db.execute(select(SurveySession).where(SurveySession.id == session_id))
-    session = res.scalar_one_or_none()
-    if not session:
-        raise HTTPException(404, "Session not found")
-
-    _validate_answers(payload.answers_json or {})
-    session.answers_json = payload.answers_json or {}
-    session.is_completed = True
-    session.progress_pct = 100.0
-    session.completed_at = datetime.now(timezone.utc)
-    session.last_saved_at = datetime.now(timezone.utc)
-    await db.commit()
-    await db.refresh(session)
-    return session
+async def complete_session(
+    session_id: uuid.UUID,
+    payload: SessionComplete,
+    db: AsyncSession = Depends(get_db),
+):
+    return await SessionService(db).complete_session(session_id, payload)
