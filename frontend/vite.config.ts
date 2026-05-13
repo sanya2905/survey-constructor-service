@@ -33,9 +33,20 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://localhost:8001",
+        target: "http://127.0.0.1:8001",
         changeOrigin: true,
         secure: false,
+        ws: false,
+        // увеличим таймауты, чтобы прокси не рвал соединение при медленных ответах
+        proxyTimeout: 60000,
+        timeout: 60000,
+        /* onError(err, req, res) {
+          // вернуть понятный ответ вместо необработанного исключения
+          if (res && !res.headersSent) {
+            res.writeHead(502, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Bad gateway: cannot reach backend", detail: String(err && err.message) }));
+          }
+        } */
       },
     },
   },
