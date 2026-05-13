@@ -8,6 +8,10 @@ class SurveyCreate(BaseModel):
     survey_json: dict = {}
     start_date: datetime | None = None
     end_date: datetime | None = None
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+    max_responses: int | None = None
+    allow_anonymous: bool | None = None
 
 class SurveyUpdate(BaseModel):
     title: str | None = None
@@ -17,6 +21,10 @@ class SurveyUpdate(BaseModel):
     version: int | None = None
     start_date: datetime | None = None
     end_date: datetime | None = None
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+    max_responses: int | None = None
+    allow_anonymous: bool | None = None
 
 class SurveyOut(BaseModel):
     id: uuid.UUID
@@ -25,5 +33,22 @@ class SurveyOut(BaseModel):
     survey_json: dict
     is_published: bool
     version: int
-    start_date: datetime | None
-    end_date: datetime | None
+    created_at: datetime | None = None
+    published_at: datetime | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+    max_responses: int | None = None
+    allow_anonymous: bool = True
+
+    model_config = {"from_attributes": True}
+
+class SurveyStats(BaseModel):
+    survey_id: uuid.UUID
+    total_sessions: int
+    completed_sessions: int
+    in_progress_sessions: int
+    completion_rate: float          # 0.0–1.0
+    avg_progress_pct: float
+    responses_by_question: dict     # question_name → {choice: count}

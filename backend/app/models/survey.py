@@ -17,8 +17,14 @@ class Survey(UUIDPkMixin, TimestampMixin, Base):
 
     is_published: Mapped[bool] = mapped_column(Boolean, default=False)
     version: Mapped[int] = mapped_column(Integer, default=1)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    # Optional window: if start_date is set and now() < start_date, survey is not open yet
+    # Optional window (admin-facing): start_date / end_date
     start_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    # Optional deadline: if set and now() > end_date, the survey is closed
     end_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Conducting settings (ТР-2, ТР-5, ТР-6)
+    starts_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    max_responses: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    allow_anonymous: Mapped[bool] = mapped_column(Boolean, default=True)

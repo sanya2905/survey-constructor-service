@@ -19,11 +19,21 @@ services:
     build: ./backend
     env_file:
       - ./backend/.env
+    # Expose API on the host so `npm run dev` (Vite) can proxy /api → localhost:8001.
+    # The survey-frontend nginx still talks to this service on the Docker network.
     ports:
       - "8001:8000"
     depends_on:
       survey-db:
         condition: service_healthy
+    restart: on-failure
+
+  survey-frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - survey-api
     restart: on-failure
 
 volumes:
