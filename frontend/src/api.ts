@@ -35,6 +35,8 @@ export type Survey = {
   survey_json: any;
   is_published?: boolean;
   version?: number;
+  start_date?: string | null;
+  end_date?: string | null;
 };
 
 export async function login(username: string, password: string) {
@@ -113,6 +115,8 @@ export type PublicSurvey = {
   description?: string | null;
   survey_json: any;
   version: number;
+  start_date?: string | null;
+  end_date?: string | null;
 };
 
 export type Session = {

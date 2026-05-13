@@ -1,11 +1,21 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Alert, Button, CircularProgress, Stack, Typography } from "@mui/material";
+import { Alert, Button, CircularProgress, Stack, TextField, Typography } from "@mui/material";
+import { editorLocalization } from "survey-creator-core";
+import "survey-creator-core/i18n/russian";
+import { surveyLocalization } from "survey-core";
+import "survey-core/i18n/russian";
 import { SurveyCreatorComponent, SurveyCreator } from "survey-creator-react";
 import "survey-core/survey-core.css";
 import "survey-creator-core/survey-creator-core.css";
 import { getSurvey, createSurvey, updateSurvey, publishSurvey, deleteSurvey, getCurrentUser } from "../api";
 import type { Survey } from "../api";
+import { datetimeLocalToIso, isoToDatetimeLocalValue } from "../datetimeLocal";
+import { copyTextToClipboard, getPublicSurveyUrl } from "../publicSurveyLink";
+
+editorLocalization.currentLocale = "ru";
+surveyLocalization.currentLocale = "ru";
+surveyLocalization.defaultLocale = "ru";
 
 export default function AdminSurveyEditorPage() {
   const { id } = useParams<{ id: string }>();
@@ -20,9 +30,17 @@ export default function AdminSurveyEditorPage() {
   const [info, setInfo] = useState<string | null>(null);
   const [creatorState, setCreatorState] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<{ role?: string } | null>(null);
+  // start_date / end_date as "YYYY-MM-DDTHH:mm" for datetime-local (local wall time, not UTC slice)
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
 
   const creator = useMemo(() => {
-    const c = new SurveyCreator({ showLogicTab: true, autoSaveEnabled: true, autoSaveDelay: 1000 });
+    const c = new SurveyCreator({
+      showLogicTab: true,
+      autoSaveEnabled: true,
+      autoSaveDelay: 1000,
+      locale: "ru",
+    });
     c.JSON = { title: "Новая анкета", pages: [] };
     return c;
   }, []);
@@ -39,6 +57,8 @@ export default function AdminSurveyEditorPage() {
         const s = await getSurvey(id);
         setSurvey(s);
         creator.JSON = s.survey_json ?? { title: s.title ?? "Анкета", pages: [] };
+        setStartDate(s.start_date ? isoToDatetimeLocalValue(s.start_date) : "");
+        setEndDate(s.end_date ? isoToDatetimeLocalValue(s.end_date) : "");
       } catch (e: any) {
         setErr(e?.message ?? String(e));
       } finally {
@@ -112,6 +132,22 @@ export default function AdminSurveyEditorPage() {
       fetchUser();
     }, [creator]);
 
+  async function handleSaveSchedule() {
+    if (!survey?.id) return;
+    setErr(null);
+    setInfo(null);
+    try {
+      const updated = await updateSurvey(survey.id as string, {
+        start_date: datetimeLocalToIso(startDate),
+        end_date: datetimeLocalToIso(endDate),
+      });
+      setSurvey(updated);
+      setInfo("Сроки проведения сохранены");
+    } catch (e: any) {
+      setErr(e?.message ?? String(e));
+    }
+  }
+
   async function handleSave() {
     setErr(null);
     setInfo(null);
@@ -120,6 +156,8 @@ export default function AdminSurveyEditorPage() {
         title: creator.JSON?.title ?? survey?.title ?? "Анкета",
         description: survey?.description ?? null,
         survey_json: creator.JSON,
+        start_date: datetimeLocalToIso(startDate),
+        end_date: datetimeLocalToIso(endDate),
       } as Partial<Survey>;
 
       if (survey?.id) {
@@ -161,6 +199,19 @@ export default function AdminSurveyEditorPage() {
     }
   }
 
+  async function handleCopyPublicLink() {
+    if (!survey?.id || !survey.is_published) return;
+    setErr(null);
+    const url = getPublicSurveyUrl(survey.id);
+    const ok = await copyTextToClipboard(url);
+    if (ok) {
+      setInfo("Ссылка для респондентов скопирована в буфер обмена");
+    } else {
+      setInfo(null);
+      setErr("Не удалось скопировать ссылку");
+    }
+  }
+
   async function handleDelete() {
     if (!survey?.id) return;
     if (!confirm("Удалить анкету?")) return;
@@ -185,7 +236,7 @@ export default function AdminSurveyEditorPage() {
             <Typography variant="h5">Редактор анкеты</Typography>
             {survey && (
               <Typography variant="body2" color="text.secondary">
-                ID: {survey.id} • status: {survey.is_published ? "published" : "draft"} • v{survey.version}
+                ID: {survey.id} • статус: {survey.is_published ? "опубликована" : "черновик"} • v{survey.version}
               </Typography>
             )}
           </Stack>
@@ -216,6 +267,11 @@ export default function AdminSurveyEditorPage() {
           <Button color="success" variant="contained" onClick={handlePublish} disabled={!!survey?.is_published || !(currentUser?.role === "admin" || currentUser?.role === "researcher") }>
             Опубликовать
           </Button>
+          {survey?.is_published && survey.id && (
+            <Button variant="outlined" onClick={() => void handleCopyPublicLink()}>
+              Скопировать ссылку
+            </Button>
+          )}
           <Button variant="outlined" color="error" onClick={handleDelete} disabled={!(currentUser?.role === "admin" || currentUser?.role === "researcher")}>
             Удалить
           </Button>
@@ -224,6 +280,44 @@ export default function AdminSurveyEditorPage() {
 
       {err && <Alert severity="error">{err}</Alert>}
       {info && <Alert severity="success">{info}</Alert>}
+
+      <Stack direction="row" spacing={2} sx={{ alignItems: "center", px: 1, flexWrap: "wrap" }}>
+        <TextField
+          label="Начало приёма ответов"
+          type="datetime-local"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          size="small"
+          slotProps={{ inputLabel: { shrink: true } }}
+          disabled={!(currentUser?.role === "admin" || currentUser?.role === "researcher")}
+          sx={{ minWidth: 280 }}
+        />
+        <TextField
+          label="Окончание приёма ответов"
+          type="datetime-local"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          size="small"
+          slotProps={{ inputLabel: { shrink: true } }}
+          disabled={!(currentUser?.role === "admin" || currentUser?.role === "researcher")}
+          sx={{ minWidth: 280 }}
+        />
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={handleSaveSchedule}
+          disabled={!survey?.id || !(currentUser?.role === "admin" || currentUser?.role === "researcher")}
+        >
+          Сохранить сроки
+        </Button>
+        {(survey?.start_date || survey?.end_date) && (
+          <Typography variant="body2" color="text.secondary">
+            {survey?.start_date && <>С {new Date(survey.start_date).toLocaleString("ru-RU")}</>}
+            {survey?.start_date && survey?.end_date && <> — </>}
+            {survey?.end_date && <>по {new Date(survey.end_date).toLocaleString("ru-RU")}</>}
+          </Typography>
+        )}
+      </Stack>
 
       <SurveyCreatorComponent creator={creator} />
     </Stack>

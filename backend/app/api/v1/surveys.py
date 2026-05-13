@@ -23,6 +23,8 @@ async def create_survey(payload: SurveyCreate, db: AsyncSession = Depends(get_db
         survey_json=payload.survey_json or {},
         is_published=False,
         version=1,
+        start_date=payload.start_date,
+        end_date=payload.end_date,
     )
     db.add(survey)
     await db.commit()
@@ -58,6 +60,10 @@ async def update_survey(survey_id: uuid.UUID, payload: SurveyUpdate, db: AsyncSe
         survey.version += 1  # простейшее версионирование
     if payload.is_published is not None:
         survey.is_published = payload.is_published
+    if "start_date" in payload.model_fields_set:
+        survey.start_date = payload.start_date
+    if "end_date" in payload.model_fields_set:
+        survey.end_date = payload.end_date
 
     await db.commit()
     await db.refresh(survey)
