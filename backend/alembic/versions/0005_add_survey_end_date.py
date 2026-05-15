@@ -1,14 +1,14 @@
 """add end_date to surveys
 
-Revision ID: 0003_add_survey_end_date
-Revises: 0002_add_users
+Revision ID: 0005_add_survey_end_date
+Revises: 0004_conducting_fields
 Create Date: 2026-05-11 00:00:00.000001
 """
 from alembic import op
 import sqlalchemy as sa
 
-revision = '0003_add_survey_end_date'
-down_revision = '0002_add_users'
+revision = '0005_add_survey_end_date'
+down_revision = '0004_conducting_fields'
 branch_labels = None
 depends_on = None
 

@@ -12,12 +12,10 @@ import uuid
 
 from fastapi import APIRouter, Depends, Response
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
 from app.core.auth import has_role, get_current_active_user
-from app.models.session import SurveySession
 from app.schemas.survey import SurveyCreate, SurveyOut, SurveyUpdate, SurveyStats
 from app.schemas.session import SessionOut
 from app.services.survey_service import SurveyService
@@ -29,33 +27,12 @@ router = APIRouter(prefix="/surveys")
 # ── CRUD ──────────────────────────────────────────────────────────────────────
 
 @router.post("", response_model=SurveyOut)
-<<<<<<< HEAD
-async def create_survey(payload: SurveyCreate, db: AsyncSession = Depends(get_db), _=Depends(has_role("admin"))):
-    survey = Survey(
-        title=payload.title,
-        description=payload.description,
-        survey_json=payload.survey_json or {},
-        is_published=False,
-        version=1,
-        start_date=payload.start_date,
-        end_date=payload.end_date,
-        starts_at=payload.starts_at,
-        ends_at=payload.ends_at,
-        max_responses=payload.max_responses,
-        allow_anonymous=payload.allow_anonymous if payload.allow_anonymous is not None else True,
-    )
-    db.add(survey)
-    await db.commit()
-    await db.refresh(survey)
-    return survey
-=======
 async def create_survey(
     payload: SurveyCreate,
     db: AsyncSession = Depends(get_db),
     _=Depends(has_role("admin")),
 ):
     return await SurveyService(db).create_survey(payload)
->>>>>>> 3481eeafdc4a500f97d3d3d89d0bb47ae6d43927
 
 
 @router.get("", response_model=list[SurveyOut])
@@ -76,39 +53,6 @@ async def get_survey(
 
 
 @router.put("/{survey_id}", response_model=SurveyOut)
-<<<<<<< HEAD
-async def update_survey(survey_id: uuid.UUID, payload: SurveyUpdate, db: AsyncSession = Depends(get_db), _=Depends(has_role("admin"))):
-    res = await db.execute(select(Survey).where(Survey.id == survey_id))
-    survey = res.scalar_one_or_none()
-    if not survey:
-        raise HTTPException(404, "Survey not found")
-
-    if payload.title is not None:
-        survey.title = payload.title
-    if payload.description is not None:
-        survey.description = payload.description
-    if payload.survey_json is not None:
-        survey.survey_json = payload.survey_json
-        survey.version += 1
-    if payload.is_published is not None:
-        survey.is_published = payload.is_published
-    if "start_date" in payload.model_fields_set:
-        survey.start_date = payload.start_date
-    if "end_date" in payload.model_fields_set:
-        survey.end_date = payload.end_date
-    if "starts_at" in payload.model_fields_set:
-        survey.starts_at = payload.starts_at
-    if "ends_at" in payload.model_fields_set:
-        survey.ends_at = payload.ends_at
-    if "max_responses" in payload.model_fields_set:
-        survey.max_responses = payload.max_responses
-    if "allow_anonymous" in payload.model_fields_set:
-        survey.allow_anonymous = payload.allow_anonymous
-
-    await db.commit()
-    await db.refresh(survey)
-    return survey
-=======
 async def update_survey(
     survey_id: uuid.UUID,
     payload: SurveyUpdate,
@@ -116,7 +60,6 @@ async def update_survey(
     _=Depends(has_role("admin")),
 ):
     return await SurveyService(db).update_survey(survey_id, payload)
->>>>>>> 3481eeafdc4a500f97d3d3d89d0bb47ae6d43927
 
 
 @router.post("/{survey_id}/publish", response_model=SurveyOut)

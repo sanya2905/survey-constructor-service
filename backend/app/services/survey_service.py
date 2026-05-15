@@ -46,9 +46,15 @@ class SurveyService:
         if not survey.is_published:
             raise HTTPException(404, "Survey not found or not published")
         now = datetime.now(timezone.utc)
-        if survey.starts_at and now < survey.starts_at:
+
+        # Keep compatibility with both old (starts_at/ends_at) and new
+        # (start_date/end_date) field names used by clients.
+        start_candidates = [dt for dt in (survey.starts_at, survey.start_date) if dt is not None]
+        end_candidates = [dt for dt in (survey.ends_at, survey.end_date) if dt is not None]
+
+        if start_candidates and now < max(start_candidates):
             raise HTTPException(403, "Survey has not started yet")
-        if survey.ends_at and now > survey.ends_at:
+        if end_candidates and now > min(end_candidates):
             raise HTTPException(403, "Survey has ended")
         return survey
 
@@ -63,6 +69,12 @@ class SurveyService:
             survey_json=payload.survey_json or {},
             is_published=False,
             version=1,
+            start_date=payload.start_date,
+            end_date=payload.end_date,
+            starts_at=payload.starts_at,
+            ends_at=payload.ends_at,
+            max_responses=payload.max_responses,
+            allow_anonymous=payload.allow_anonymous if payload.allow_anonymous is not None else True,
         )
         self._db.add(survey)
         await self._db.commit()
@@ -80,13 +92,17 @@ class SurveyService:
             survey.version += 1
         if payload.is_published is not None:
             survey.is_published = payload.is_published
-        if payload.starts_at is not None:
+        if "start_date" in payload.model_fields_set:
+            survey.start_date = payload.start_date
+        if "end_date" in payload.model_fields_set:
+            survey.end_date = payload.end_date
+        if "starts_at" in payload.model_fields_set:
             survey.starts_at = payload.starts_at
-        if payload.ends_at is not None:
+        if "ends_at" in payload.model_fields_set:
             survey.ends_at = payload.ends_at
-        if payload.max_responses is not None:
+        if "max_responses" in payload.model_fields_set:
             survey.max_responses = payload.max_responses
-        if payload.allow_anonymous is not None:
+        if "allow_anonymous" in payload.model_fields_set:
             survey.allow_anonymous = payload.allow_anonymous
         await self._db.commit()
         await self._db.refresh(survey)

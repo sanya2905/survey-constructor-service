@@ -3,7 +3,7 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm install
 COPY . .
 # When running behind nginx the SPA calls /api/v1/... (relative URL),
 # so no VITE_API_BASE_URL override is needed — the default in api.ts works.

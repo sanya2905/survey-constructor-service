@@ -9,7 +9,7 @@
  * - Typed helpers for every backend endpoint
  */
 
-import axios, { type AxiosRequestConfig } from "axios";
+import axios from "axios";
 
 const API_PREFIX = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
 
@@ -99,196 +99,107 @@ export function errorMessage(error: unknown, fallback = "Request failed"): strin
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type Survey = {
-  id?: string;
-  title: string;
-  description?: string | null;
-  survey_json: Record<string, unknown>;
-  is_published?: boolean;
-  version?: number;
-  created_at?: string | null;
-  published_at?: string | null;
-<<<<<<< HEAD
-  start_date?: string | null;
-  end_date?: string | null;
-=======
->>>>>>> 3481eeafdc4a500f97d3d3d89d0bb47ae6d43927
-  starts_at?: string | null;
-  ends_at?: string | null;
-  max_responses?: number | null;
-  allow_anonymous?: boolean;
+   id?: string;
+   title: string;
+   description?: string | null;
+   survey_json: Record<string, unknown>;
+   is_published?: boolean;
+   version?: number;
+   created_at?: string | null;
+   published_at?: string | null;
+   start_date?: string | null;
+   end_date?: string | null;
+   starts_at?: string | null;
+   ends_at?: string | null;
+   max_responses?: number | null;
+   allow_anonymous?: boolean;
 };
 
 export type SurveyStats = {
-  survey_id: string;
-  total_sessions: number;
-  completed_sessions: number;
-  in_progress_sessions: number;
-  completion_rate: number;
-  avg_progress_pct: number;
-  responses_by_question: Record<string, Record<string, number>>;
+   survey_id: string;
+   total_sessions: number;
+   completed_sessions: number;
+   in_progress_sessions: number;
+   completion_rate: number;
+   avg_progress_pct: number;
+   responses_by_question: Record<string, Record<string, number>>;
 };
 
 export type User = {
-  id?: string;
-  username: string;
-  role: string;
-  email?: string | null;
+   id?: string;
+   username: string;
+   role: string;
+   email?: string | null;
 };
 
 export type AuthToken = {
-  access_token: string;
-  token_type?: string;
+   access_token: string;
+   token_type?: string;
 };
 
 export type Session = {
-  id: string;
-  survey_id: string;
-  respondent_id?: string | null;
-  answers_json: Record<string, unknown>;
-  is_completed: boolean;
-  current_page?: number;
-  progress_pct?: number;
-  last_saved_at?: string | null;
-  completed_at?: string | null;
-  created_at?: string | null;
+   id: string;
+   survey_id: string;
+   respondent_id?: string | null;
+   answers_json: Record<string, unknown>;
+   is_completed: boolean;
+   current_page?: number;
+   progress_pct?: number;
+   last_saved_at?: string | null;
+   completed_at?: string | null;
+   created_at?: string | null;
 };
 
 export type PublicSurvey = {
-  id: string;
-  title: string;
-  description?: string | null;
-  survey_json: Record<string, unknown>;
-  version: number;
-  allow_anonymous?: boolean;
-  ends_at?: string | null;
+    id: string;
+    title: string;
+    description?: string | null;
+    survey_json: Record<string, unknown>;
+    version: number;
+    allow_anonymous?: boolean;
+    starts_at?: string | null;
+    ends_at?: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
 };
 
-// ── Auth ──────────────────────────────────────────────────────────────────────
-
-export async function login(username: string, password: string): Promise<AuthToken> {
-  const params = new URLSearchParams();
-  params.append("username", username);
-  params.append("password", password);
-  const res = await api.post("/auth/token", params, {
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-  });
-  return res.data;
+// ── API Endpoints ──────────────────────────────────────────────────────────────
+export function login(username: string, password: string) {
+  return api.post<AuthToken>('/auth/login', { username, password }).then(res => res.data);
 }
 
-export async function register(payload: {
-  username: string;
-  password: string;
-  role?: string;
-  email?: string;
-}): Promise<User> {
-  const res = await api.post("/auth/register", payload);
-  return res.data;
+export function getCurrentUser() {
+  return api.get<User>('/users/me').then(res => res.data);
 }
 
-export async function getCurrentUser(): Promise<User> {
-  const res = await api.get("/auth/me");
-  return res.data;
+export function getSurveys() {
+  return api.get<Survey[]>('/surveys').then(res => res.data);
 }
 
-// ── Surveys ───────────────────────────────────────────────────────────────────
-
-export async function getSurveys(): Promise<Survey[]> {
-  const res = await api.get("/surveys");
-  return res.data;
+export function createSurvey(survey: Partial<Survey>) {
+  return api.post<Survey>('/surveys', survey).then(res => res.data);
 }
 
-export async function getSurvey(id: string): Promise<Survey> {
-  const res = await api.get(`/surveys/${id}`);
-  return res.data;
+export function updateSurvey(id: string, survey: Partial<Survey>) {
+  return api.put<Survey>(`/surveys/${id}`, survey).then(res => res.data);
 }
 
-export async function createSurvey(payload: Partial<Survey>): Promise<Survey> {
-  const res = await api.post("/surveys", payload);
-  return res.data;
+export function deleteSurvey(id: string) {
+  return api.delete<void>(`/surveys/${id}`).then(res => res.data);
 }
 
-export async function updateSurvey(id: string, payload: Partial<Survey>): Promise<Survey> {
-  const res = await api.put(`/surveys/${id}`, payload);
-  return res.data;
+export function publishSurvey(id: string) {
+  return api.post<Survey>(`/surveys/${id}/publish`).then(res => res.data);
 }
 
-export async function deleteSurvey(id: string): Promise<void> {
-  await api.delete(`/surveys/${id}`);
+export function getSurvey(id: string) {
+  return api.get<Survey>(`/surveys/${id}`).then(res => res.data);
 }
 
-export async function publishSurvey(id: string): Promise<Survey> {
-  const res = await api.post(`/surveys/${id}/publish`);
-  return res.data;
+export function getSurveyStats(id: string) {
+  return api.get<SurveyStats>(`/surveys/${id}/stats`).then(res => res.data);
 }
 
-export async function getSurveyStats(id: string): Promise<SurveyStats> {
-  const res = await api.get(`/surveys/${id}/stats`);
-  return res.data;
+export function getSurveySessions(id: string) {
+  return api.get<Session[]>(`/surveys/${id}/sessions`).then(res => res.data);
 }
-
-export async function getSurveySessions(
-  id: string,
-  opts?: { respondent_id?: string; completed_only?: boolean },
-): Promise<Session[]> {
-  const res = await api.get(`/surveys/${id}/sessions`, { params: opts });
-  return res.data;
-}
-
-// ── Public (unauthenticated) ──────────────────────────────────────────────────
-
-export async function getPublicSurvey(id: string): Promise<PublicSurvey> {
-  const res = await api.get(`/public/surveys/${id}`);
-  return res.data;
-}
-
-export async function startSession(
-  survey_id: string,
-  respondent_id?: string,
-): Promise<Session> {
-  const res = await api.post(`/public/surveys/${survey_id}/sessions`, { respondent_id });
-  return res.data;
-}
-
-export async function saveProgress(
-  session_id: string,
-  answers_json: Record<string, unknown>,
-  current_page?: number,
-  progress_pct?: number,
-): Promise<Session> {
-  const res = await api.put(`/public/sessions/${session_id}`, {
-    answers_json,
-    current_page: current_page ?? 0,
-    progress_pct: progress_pct ?? 0,
-  });
-  return res.data;
-}
-
-export async function completeSession(
-  session_id: string,
-  answers_json: Record<string, unknown>,
-): Promise<Session> {
-  const res = await api.post(`/public/sessions/${session_id}/complete`, { answers_json });
-  return res.data;
-}
-
-<<<<<<< HEAD
-export type PublicSurvey = {
-  id: string;
-  title: string;
-  description?: string | null;
-  survey_json: Record<string, unknown>;
-  version: number;
-  start_date?: string | null;
-  end_date?: string | null;
-  allow_anonymous?: boolean;
-  starts_at?: string | null;
-  ends_at?: string | null;
-};
-=======
-// ── Generic request helper (for custom calls) ─────────────────────────────────
-
-export async function request<T = unknown>(config: AxiosRequestConfig): Promise<T> {
-  const res = await api.request<T>(config);
-  return res.data;
-}
->>>>>>> 3481eeafdc4a500f97d3d3d89d0bb47ae6d43927

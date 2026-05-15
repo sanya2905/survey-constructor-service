@@ -105,8 +105,11 @@ class SessionService:
             select(Survey).where(Survey.id == session.survey_id)
         )
         survey = survey_res.scalar_one_or_none()
-        if survey and survey.ends_at and datetime.now(timezone.utc) > survey.ends_at:
-            raise HTTPException(403, "Survey has ended — no further changes allowed")
+        if survey:
+            now = datetime.now(timezone.utc)
+            end_candidates = [dt for dt in (survey.ends_at, survey.end_date) if dt is not None]
+            if end_candidates and now > min(end_candidates):
+                raise HTTPException(403, "Survey has ended — no further changes allowed")
 
         _validate_answers(payload.answers_json or {})
         session.answers_json = payload.answers_json or {}
