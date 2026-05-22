@@ -165,11 +165,16 @@ export type PublicSurvey = {
 
 // ── API Endpoints ──────────────────────────────────────────────────────────────
 export function login(username: string, password: string) {
-  return api.post<AuthToken>('/auth/login', { username, password }).then(res => res.data);
+  const params = new URLSearchParams();
+  params.append("username", username);
+  params.append("password", password);
+  return api.post<AuthToken>("/auth/token", params.toString(), {
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  }).then(res => res.data);
 }
 
 export function getCurrentUser() {
-  return api.get<User>('/users/me').then(res => res.data);
+  return api.get<User>("/auth/me").then(res => res.data);
 }
 
 export function getSurveys() {

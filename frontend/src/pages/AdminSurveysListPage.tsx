@@ -168,7 +168,7 @@ export default function AdminSurveysListPage() {
             icon={<AssignmentIcon sx={{ color: "primary.main", fontSize: 22 }} />}
             label="Всего анкет"
             value={totalSurveys}
-            accent="rgba(13,148,136,0.08)"
+            accent="rgba(0,51,153,0.08)"
           />
           <MetricCard
             icon={<CheckCircleIcon sx={{ color: "success.main", fontSize: 22 }} />}
@@ -337,7 +337,7 @@ function StatusChip({
     warning: { bg: "rgba(217,119,6,0.1)", text: "#D97706" },
     error: { bg: "rgba(220,38,38,0.1)", text: "#DC2626" },
     default: { bg: "rgba(100,116,139,0.1)", text: "#64748B" },
-    primary: { bg: "rgba(13,148,136,0.1)", text: "#0D9488" },
+    primary: { bg: "rgba(0,51,153,0.1)", text: "#003399" },
   };
   const c = colorMap[status.color] ?? colorMap.default;
   return (

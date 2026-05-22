@@ -133,10 +133,10 @@ export default function LoginPage({ onLogin }: { onLogin?: (role: string) => voi
                     py: 1,
                     gap: 0.75,
                     "&.Mui-selected": {
-                      bgcolor: "rgba(13,148,136,0.1)",
+                      bgcolor: "rgba(0,51,153,0.1)",
                       color: "primary.dark",
                       borderColor: "primary.main",
-                      "&:hover": { bgcolor: "rgba(13,148,136,0.15)" },
+                      "&:hover": { bgcolor: "rgba(0,51,153,0.15)" },
                     },
                   }}
                 >

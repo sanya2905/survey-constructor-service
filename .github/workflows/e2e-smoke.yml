@@ -32,3 +32,15 @@ jobs:
       - name: Run E2E smoke script
         run: |
           python3 scripts/e2e_smoke.py --api http://localhost:80/api/v1
+
+      - name: Run E2E survey lifecycle script
+        run: |
+          python3 scripts/e2e_survey_lifecycle.py --api http://localhost:80/api/v1
+
+      - name: Run E2E public flow script
+        run: |
+          python3 scripts/e2e_public_flow.py --api http://localhost:80/api/v1
+
+      - name: Run E2E stats & export script
+        run: |
+          python3 scripts/e2e_stats_and_export.py --api http://localhost:80/api/v1

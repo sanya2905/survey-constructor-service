@@ -161,7 +161,7 @@ export default function App() {
                   label={ROLE_LABELS[authRole] ?? authRole}
                   size="small"
                   sx={{
-                    bgcolor: "rgba(13,148,136,0.1)",
+                    bgcolor: "rgba(0,51,153,0.1)",
                     color: "primary.dark",
                     fontWeight: 600,
                     fontSize: 12,
@@ -256,8 +256,8 @@ function NavTab({
         borderRadius: "8px 8px 0 0",
         px: 1.5,
         py: 0.75,
-        bgcolor: active ? "rgba(13,148,136,0.08)" : "transparent",
-        "&:hover": { bgcolor: "rgba(13,148,136,0.06)", color: "primary.main" },
+        bgcolor: active ? "rgba(0,51,153,0.08)" : "transparent",
+        "&:hover": { bgcolor: "rgba(0,51,153,0.06)", color: "primary.main" },
         borderBottom: "2px solid",
         borderColor: active ? "primary.main" : "transparent",
       }}

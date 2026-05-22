@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import {
   Alert,
@@ -43,6 +44,7 @@ type NotStartedInfo = {
 
 export default function PublicSurveyRunPage() {
   const { surveyId } = useParams<{ surveyId: string }>();
+  const navigate = useNavigate();
 
   const [pub, setPub] = useState<PublicSurvey | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -85,8 +87,8 @@ export default function PublicSurveyRunPage() {
           current_page: model.currentPageNo,
           progress_pct: pct,
         });
-      } catch {
-        /* silent for autosave */
+      } catch (e: unknown) {
+        setErr(errorMessage(e, "Не удалось сохранить ответы — проверьте подключение"));
       }
     }, 700) as unknown as number;
   }
@@ -342,6 +344,9 @@ export default function PublicSurveyRunPage() {
           <Button variant="outlined" onClick={() => void loadSurvey()}>
             Проверить снова
           </Button>
+          <Button variant="text" onClick={() => navigate("/")}>
+            На главную
+          </Button>
         </Stack>
       </Box>
     );
@@ -357,6 +362,9 @@ export default function PublicSurveyRunPage() {
         <Stack spacing={2}>
           <Typography variant="h5">{pub?.title ?? "Анкета"}</Typography>
           <Alert severity="warning">Срок проведения этой анкеты истёк. Приём ответов завершён.</Alert>
+          <Button variant="text" onClick={() => navigate("/")}>
+            На главную
+          </Button>
         </Stack>
       </Box>
     );
@@ -417,6 +425,9 @@ export default function PublicSurveyRunPage() {
           )}
           <Button variant="outlined" onClick={handleRestart}>
             Пройти заново
+          </Button>
+          <Button variant="text" onClick={() => navigate("/")}>
+            На главную
           </Button>
         </Stack>
       </Box>

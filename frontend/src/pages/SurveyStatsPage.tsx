@@ -96,7 +96,7 @@ export default function SurveyStatsPage() {
         <StatCard label="Всего сессий" value={stats.total_sessions} />
         <StatCard label="Завершено" value={stats.completed_sessions} valueColor="#059669" />
         <StatCard label="В процессе" value={stats.in_progress_sessions} valueColor="#D97706" />
-        <StatCard label="Завершение" value={`${Math.round(stats.completion_rate * 100)}%`} valueColor="#0D9488" />
+        <StatCard label="Завершение" value={`${Math.round(stats.completion_rate * 100)}%`} valueColor="#003399" />
         <StatCard label="Средний прогресс" value={`${Math.round(stats.avg_progress_pct)}%`} />
       </Box>
 
