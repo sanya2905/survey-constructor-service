@@ -23,6 +23,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import SettingsIcon from "@mui/icons-material/Settings";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutlined";
+import HistoryIcon from "@mui/icons-material/History";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { editorLocalization, settings } from "survey-creator-core";
 import "survey-creator-core/i18n/russian";
@@ -70,6 +71,9 @@ import type { Survey, User } from "../api";
 import { datetimeLocalToIso, isoToDatetimeLocalValue } from "../datetimeLocal";
 import { copyTextToClipboard, getPublicSurveyUrl } from "../publicSurveyLink";
 import VersionHistoryPanel from "../components/VersionHistoryPanel";
+import ResizableSplitPane from "../components/ResizableSplitPane";
+
+const VERSION_PANEL_STORAGE = "survey-editor-version-panel";
 
 editorLocalization.currentLocale = "ru";
 
@@ -107,6 +111,13 @@ export default function AdminSurveyEditorPage() {
   const [maxResponses, setMaxResponses] = useState("");
   const [allowAnonymous, setAllowAnonymous] = useState(true);
   const [versionRefreshKey, setVersionRefreshKey] = useState(0);
+  const [versionPanelCollapsed, setVersionPanelCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(`${VERSION_PANEL_STORAGE}:collapsed`) === "1";
+    } catch {
+      return false;
+    }
+  });
 
   const creator = useMemo(() => {
     const c = new SurveyCreator({
@@ -435,6 +446,31 @@ export default function AdminSurveyEditorPage() {
             </Tooltip>
           )}
 
+          {survey?.id && (
+            <Tooltip title={versionPanelCollapsed ? "Показать историю версий" : "Скрыть историю версий"}>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setVersionPanelCollapsed((c) => {
+                    const next = !c;
+                    try {
+                      localStorage.setItem(`${VERSION_PANEL_STORAGE}:collapsed`, next ? "1" : "0");
+                    } catch {
+                      /* ignore */
+                    }
+                    return next;
+                  });
+                }}
+                sx={{
+                  color: versionPanelCollapsed ? "text.secondary" : "primary.main",
+                  bgcolor: versionPanelCollapsed ? "transparent" : "action.selected",
+                }}
+              >
+                <HistoryIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+
           <Tooltip title="Настройки проведения (сроки, лимиты, анонимность)">
             <IconButton size="small" onClick={() => setSettingsOpen(true)} sx={{ color: "text.secondary" }}>
               <SettingsIcon fontSize="small" />
@@ -526,30 +562,65 @@ export default function AdminSurveyEditorPage() {
         )}
       </Stack>
 
-      <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex" }}>
-        <Box sx={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+      {survey?.id ? (
+        <ResizableSplitPane
+          storageKey={VERSION_PANEL_STORAGE}
+          defaultSecondaryWidth={260}
+          minPrimaryWidth={420}
+          minSecondaryWidth={180}
+          maxSecondaryWidth={480}
+          collapsed={versionPanelCollapsed}
+          onCollapsedChange={(c) => {
+            setVersionPanelCollapsed(c);
+            try {
+              localStorage.setItem(`${VERSION_PANEL_STORAGE}:collapsed`, c ? "1" : "0");
+            } catch {
+              /* ignore */
+            }
+          }}
+          primary={
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                minWidth: 0,
+                height: "100%",
+                overflow: "auto",
+                "& .svc-creator": {
+                  width: "100%",
+                  height: "100%",
+                  minHeight: 400,
+                },
+              }}
+            >
+              <SurveyCreatorComponent creator={creator} />
+            </Box>
+          }
+          secondary={
+            <VersionHistoryPanel
+              surveyId={survey.id}
+              currentVersion={survey.version ?? 1}
+              refreshKey={versionRefreshKey}
+              canEdit={canEdit}
+              onRestore={(surveyJson, title) => {
+                creator.JSON = surveyJson;
+                if (title) {
+                  creator.JSON = { ...surveyJson, title };
+                }
+                void getSurvey(survey.id as string).then((s) => {
+                  setSurvey(s);
+                  setVersionRefreshKey((k) => k + 1);
+                  setInfo(`Восстановлена версия v${s.version}`);
+                });
+              }}
+            />
+          }
+        />
+      ) : (
+        <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
           <SurveyCreatorComponent creator={creator} />
         </Box>
-        {survey?.id && (
-          <VersionHistoryPanel
-            surveyId={survey.id}
-            currentVersion={survey.version ?? 1}
-            refreshKey={versionRefreshKey}
-            canEdit={canEdit}
-            onRestore={(surveyJson, title) => {
-              creator.JSON = surveyJson;
-              if (title) {
-                creator.JSON = { ...surveyJson, title };
-              }
-              void getSurvey(survey.id as string).then((s) => {
-                setSurvey(s);
-                setVersionRefreshKey((k) => k + 1);
-                setInfo(`Восстановлена версия v${s.version}`);
-              });
-            }}
-          />
-        )}
-      </Box>
+      )}
 
       <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Настройки проведения анкетирования</DialogTitle>

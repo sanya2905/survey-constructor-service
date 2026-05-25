@@ -71,6 +71,7 @@ export default function App() {
 
   const isPublicPage = location.pathname.startsWith("/s/");
   const isLoginPage = location.pathname === "/login";
+  const isEditorPage = /^\/admin\/surveys\/[^/]+$/.test(location.pathname);
   const showNav = !isPublicPage && !isLoginPage;
 
   const isAdminOrResearcher = authRole === "admin" || authRole === "researcher";
@@ -199,8 +200,27 @@ export default function App() {
       )}
 
       {/* ── Page content ── */}
-      <Box component="main" sx={{ flexGrow: 1, py: isPublicPage || isLoginPage ? 0 : 3 }}>
-        <Container maxWidth="lg" sx={{ height: "100%" }}>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          py: isPublicPage || isLoginPage || isEditorPage ? 0 : 3,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <Container
+          maxWidth={isEditorPage ? false : "lg"}
+          disableGutters={isEditorPage}
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+            height: isEditorPage ? "calc(100svh - 64px)" : "100%",
+          }}
+        >
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/" element={<Navigate to="/admin/surveys" replace />} />

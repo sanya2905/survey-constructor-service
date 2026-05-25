@@ -177,14 +177,13 @@ export default function VersionHistoryPanel({
   return (
     <Box
       sx={{
-        width: 300,
-        flexShrink: 0,
+        width: "100%",
+        height: "100%",
         display: "flex",
         flexDirection: "column",
-        borderLeft: "1px solid",
-        borderColor: "divider",
         bgcolor: "background.paper",
         minHeight: 0,
+        minWidth: 0,
       }}
     >
       <Box
