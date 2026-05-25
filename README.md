@@ -11,10 +11,13 @@ docker compose up --build
 Миграции БД (локально, без Docker):
 
 ```bash
+docker compose up -d survey-db   # PostgreSQL на localhost:5433
 cd backend
-cp .env.example .env   # при первом запуске, поправьте DATABASE_URL
+cp .env.example .env   # при первом запуске
 ./migrate.sh
 ```
+
+В `.env` для работы **с хоста** (Codespace) нужен `localhost:5433`, не `survey-db` (это имя только внутри Docker).
 
 Скрипт ставит зависимости из `requirements.txt` и запускает `python -m alembic upgrade head`.
 **Не вызывайте глобальный `alembic`** из Codespace — у него нет пакетов проекта (`pydantic_settings` и др.).
