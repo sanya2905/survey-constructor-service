@@ -109,7 +109,7 @@ flowchart TD
 
 ### 3.5. Диаграмма компонентов
 
-На рисунке 3.3 одна колонка: браузер, страница прохождения, nginx, API, таблица сессий. Для листа А4 книжной ориентации. Экспорт PNG: https://mermaid.live, ширина около 350–450 px.
+На рисунке 3.3 компоненты идут одной узкой колонкой: от браузера к API и таблице сессий. Так схема обычно помещается на лист А4 без поворота. Экспорт PNG: https://mermaid.live (ширина около 350–450 px).
 
 ```mermaid
 flowchart TD
@@ -125,61 +125,31 @@ flowchart TD
     P --> N --> API --> SS --> DB
 ```
 
-Рисунок 3.3. Компоненты и размещение подсистемы проведения
+Рисунок 3.3. Компоненты подсистемы проведения
 
-Клиентская часть.
+Клиентская часть, каталог frontend/src.
 
-PublicSurveyRunPage.tsx на маршруте /s/:surveyId. Тип stage: identify, running, done, expired, not_started. При монтировании вызывается loadSurvey: GET /public/surveys/{surveyId}, разбор survey_json в Model SurveyJS, locale ru, showProgressBar top, progressBarType questions.
+PublicSurveyRunPage.tsx на маршруте /s/:surveyId. Переключатель stage: identify, running, done, expired, not_started. При открытии loadSurvey запрашивает GET /public/surveys/{surveyId}, поднимает Model SurveyJS (locale ru, прогресс по видимым вопросам).
 
-identify. Показываются title, description, срок end_date или ends_at. Поле respondent_id. Если allow_anonymous false, без ввода старт блокируется с сообщением на русском. Кнопка начала вызывает handleStart и POST sessions.
+На identify показывают заголовок, описание и срок. Поле respondent_id обязательно, если allow_anonymous=false. Старт вызывает POST /public/surveys/{id}/sessions и пишет UUID в localStorage (ключ survey_session_{surveyId}). Если ключ уже есть, сессия подгружается через GET /public/sessions/{id} и экран identify пропускается.
 
-running. attachHooks вешает onValueChanged, onCurrentPageChanged, onComplete. scheduleSave с setTimeout 700 мс шлёт PUT с answers_json, current_page model.currentPageNo, progress_pct. updateProgress считает видимые вопросы через getAllQuestions(false). Над формой LinearProgress MUI. Ошибки autosave попадают в Alert.
+В running SurveyJS Runner с hooks onValueChanged и onCurrentPageChanged. scheduleSave с паузой 700 мс отправляет PUT с answers_json, current_page и progress_pct. Над анкетой LinearProgress. onComplete вызывает POST complete и переводит в done. Кнопка Пройти заново сбрасывает localStorage и stage.
 
-done. Текст благодарности, имя респондента если было. Кнопка Пройти заново сбрасывает localStorage и stage identify.
+Отдельные экраны expired и not_started в коде есть, но без доработки API редко показываются: сервер шлёт 403 со строкой, а не 410 и не JSON с code (подробнее в п. 3.7).
 
-expired и not_started. В коде заложены отдельные экраны. expired ждёт HTTP 410; backend сейчас отдаёт 403 с текстом Survey has ended, поэтому чаще срабатывает общий Alert. not_started ждёт JSON с code survey_not_started; сервер отдаёт строку Survey has not started yet, поэтому экран с таймером опроса раз в 15 с обычно не включается.
+App.tsx на путях /s/* не показывает админский AppBar. ThemeContext, theme.ts и applySurveyTheme выравнивают MUI и SurveyJS под primary #003399. UnnLogo.tsx в шапке. manifest.webmanifest и service worker в production кэшируют статику; ответы без сети не уходят. Тот же bundle отдаётся как remote surveyConstructor. publicSurveyLink.ts и типы PublicSurvey в api.ts использует админка; max_responses в ответе public survey нет.
 
-Тема. useThemeMode из ThemeContext, переключатель в шапке. applySurveyTheme патчит CSS-переменные DefaultLight и DefaultDark под цвет #003399 на элементе .sd-root-modern.
+Серверная часть, каталог backend/app.
 
-UnnLogo.tsx в шапке, подпись про анкетирование ННГУ.
+Роутер public.py без JWT: GET опубликованной анкеты, POST/GET/PUT сессии, POST complete.
 
-PWA. manifest.webmanifest в index.html. main.tsx регистрирует /sw.js только в PROD: кэширует иконки и оболочку, navigation network-first.
+SurveyService.get_public_survey: неопубликованная анкета даёт 404, до окна приёма и после конца 403 с текстом Survey has not started yet / Survey has ended. Сверяются starts_at со start_date и ends_at с end_date.
 
-App.tsx скрывает админский AppBar на pathname /s/.... Federation: тот же bundle, что у конструктора.
+SessionService.start_session сначала вызывает get_public_survey, затем сравнивает число завершённых с max_responses (403 при лимите). Без respondent_id при allow_anonymous=false возвращает 400. save_progress не пишет в завершённую сессию, проверяет формат answers_json и сроки на каждом PUT. complete_session фиксирует ответы и is_completed=true; повторной проверки срока на complete пока нет.
 
-publicSurveyLink.ts формирует абсолютный URL /s/{id} для админки.
+Таблица survey_sessions (JSONB answers_json, progress_pct, current_page, respondent_id, CASCADE от surveys). Исследователь читает те же строки через маршруты конструктора: sessions, stats, export.
 
-api.ts типы PublicSurvey без max_responses в ответе GET public survey.
-
-Серверная часть.
-
-app/api/v1/public.py без JWT.
-
-| Метод | Путь | Назначение |
-|-------|------|------------|
-| GET | /public/surveys/{survey_id} | Опубликованная анкета и survey_json |
-| POST | /public/surveys/{survey_id}/sessions | Создание сессии |
-| GET | /public/sessions/{session_id} | Чтение сессии |
-| PUT | /public/sessions/{session_id} | Autosave |
-| POST | /public/sessions/{session_id}/complete | Завершение |
-
-Ответ GET public survey: id, title, description, survey_json, version, start_date, end_date, allow_anonymous, starts_at, ends_at. max_responses респонденту не отдаётся.
-
-SurveyService.get_public_survey. Неопубликованная 404. До начала окна 403 Survey has not started yet. После конца 403 Survey has ended. Учитываются обе пары дат: starts_at и start_date, ends_at и end_date.
-
-SessionService.start_session. Сначала get_public_survey. Потом completed_response_count сравнивается с max_responses, при превышении 403. Если allow_anonymous false и respondent_id пустой, 400. Создаётся строка survey_sessions с пустым answers_json.
-
-save_progress. Нельзя писать в завершённую сессию (400). answers_json валидируется как dict со строковыми ключами. Снова проверка сроков анкеты (403). Обновляются current_page, progress_pct, last_saved_at.
-
-complete_session. Записывает answers_json, is_completed true, progress_pct 100, completed_at. Повторной проверки срока на complete в текущей версии нет.
-
-Модель survey_sessions: survey_id с ON DELETE CASCADE, respondent_id до 100 символов, answers_json JSONB, is_completed, completed_at, current_page, progress_pct, last_saved_at, created_at, updated_at.
-
-Связь с конструктором. Исследователь смотрит те же сессии через GET /surveys/{id}/sessions и GET /surveys/{id}/stats, выгружает GET /surveys/{id}/export.
-
-Развёртывание. Респондент в production открывает порт 80 контейнера survey-frontend. nginx отдаёт index.html для SPA и проксирует /api на survey-api:8000. JWT не нужен. GET /api/v1/info объявляет capability survey-respond для родительской системы. В dev Vite 5173 с proxy /api на 8001.
-
-E2E. e2e_public_flow.py: start, два PUT с разным progress_pct, complete, проверка через public GET и админский list sessions. e2e_stats_and_export.py: три сессии, stats, export с anonymize. Сроки и лимит в E2E отдельно не тестируются.
+В production nginx в survey-frontend на :80 отдаёт SPA и проксирует /api на survey-api. В dev Vite на 5173 проксирует на 8001. GET /api/v1/info отдаёт capability survey-respond для оболочки АСНИ. В CI e2e_public_flow.py и e2e_stats_and_export.py проходят цикл сессии и выгрузку; сроки и лимит отдельно не гоняются.
 
 ---
 
