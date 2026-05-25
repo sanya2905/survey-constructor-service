@@ -271,7 +271,7 @@ export default function VersionHistoryPanel({
                           <Chip
                             label="Текущая"
                             size="small"
-                            color="success"
+                            color="primary"
                             variant="outlined"
                             sx={{ height: 22, fontSize: 11 }}
                           />
