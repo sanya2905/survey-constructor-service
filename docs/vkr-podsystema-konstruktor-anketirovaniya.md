@@ -1,6 +1,6 @@
 # Подсистема-конструктор анкетирования АСНИ социологических данных
 
-*Фрагмент пояснительной записки к выпускной квалификационной работе (назначение, требования, диаграммы, описание интерфейса и программной реализации подсистемы).*
+Фрагмент пояснительной записки к выпускной квалификационной работе: назначение, требования, диаграммы, описание интерфейса и программной реализации подсистемы.
 
 ---
 
@@ -10,9 +10,9 @@
 
 Подсистема-конструктор анкетирования входит в АСНИ социологических данных как модуль, в котором исследователь собирает электронную форму опроса без программирования, сохраняет машиночитаемое описание в базу и ведёт анкету от черновика до публикации.
 
-Конструктор даёт визуальный редактор SurveyJS Creator (вкладки «Дизайн», «Логика», «Предпросмотр»), настройку сроков и лимитов проведения, публикацию и просмотр собранных ответов. Сбор ответов и экран прохождения для респондента — зона подсистемы проведения анкетирования; конструктор отвечает за метаданные, `survey_json`, признак публикации и журнал версий.
+Исследователь работает в визуальном редакторе SurveyJS Creator: вкладки Дизайн, Логика и Предпросмотр. Здесь же задаются сроки приёма ответов, лимит числа завершённых анкет, разрешение или запрет анонимного прохождения. После публикации анкета становится доступна подсистеме проведения по идентификатору и публичной ссылке вида /s/{id}. Конструктор хранит метаданные анкеты, поле survey_json, признак is_published и журнал версий в таблице survey_versions.
 
-Границы: конструктор не выполняет статистический анализ уровня АРМ исследователя (корреляции, кросс-таблицы «на лету»), но показывает сводку по сессиям и выгрузку JSON/CSV по конкретной анкете.
+Сбор ответов и экран для респондента конструктору не принадлежат. Статистический анализ уровня АРМ исследователя (корреляции, кросс-таблицы на лету) тоже вне этой подсистемы. Зато исследователь видит сводку по сессиям конкретной анкеты и может выгрузить ответы в JSON или CSV.
 
 ---
 
@@ -20,31 +20,31 @@
 
 #### 2.2.1. Функциональные требования
 
-Обозначения приоритетов: О — обязательное (Must), Ж — желательное (Should), В — возможное (Could).
+Обозначения приоритетов: О обязательное (Must), Ж желательное (Should), В возможное (Could).
 
 Таблица 2.1 — Функциональные требования к подсистеме-конструктору анкетирования
 
 | ID | Формулировка требования | Приоритет |
 |----|-------------------------|-----------|
-| К.1.01 | Пользователь с ролью `admin` или `researcher` создаёт анкету и открывает её в режиме редактирования | О |
+| К.1.01 | Пользователь с ролью admin или researcher создаёт анкету и открывает её в режиме редактирования | О |
 | К.1.02 | Подсистема предоставляет визуальный редактор структуры анкеты (страницы, типы вопросов, свойства элементов) без написания кода | О |
 | К.1.03 | Описание анкеты сохраняется в JSON по схеме SurveyJS, совместимой с исполнителем в подсистеме проведения | О |
 | К.1.04 | Изменения черновика автоматически сохраняются на сервер с задержкой около 1 с (только для ролей с правом редактирования) | Ж |
 | К.1.05 | Ручное сохранение черновика по команде пользователя | О |
-| К.1.06 | При изменении отслеживаемых полей анкеты сервер увеличивает номер версии и пишет запись в журнал `survey_versions` | О |
+| К.1.06 | При изменении отслеживаемых полей сервер увеличивает номер версии и пишет запись в журнал survey_versions | О |
 | К.1.07 | Исследователь публикует анкету; после публикации она доступна подсистеме проведения по идентификатору | О |
-| К.1.08 | Повторная публикация через интерфейс конструктора не предусмотрена (кнопка блокируется после первого успешного publish) | В |
-| К.1.09 | Исследователь может удалить ненужную анкету (каскадно удаляются сессии) | Ж |
-| К.1.10 | Настройка логики анкеты через вкладку «Логика» SurveyJS Creator; в интерфейсе есть справка по условному показу вопросов | Ж |
-| К.1.11 | Настройка сроков проведения: дата/время начала и окончания приёма ответов | О |
-| К.1.12 | Задание `max_responses`; при достижении лимита подсистема проведения не создаёт новые сессии | Ж |
-| К.1.13 | Разрешение или запрет анонимного прохождения (`allow_anonymous`) | Ж |
-| К.1.14 | Просмотр статистики анкеты: число сессий, завершённость, средний прогресс, распределение ответов по вопросам | О |
-| К.1.15 | Выгрузка ответов в JSON или CSV (параметры `include_incomplete`, `anonymize` на уровне API) | Ж |
-| К.1.16 | Просмотр журнала версий анкеты: автор, время, краткое описание изменений | О |
-| К.1.17 | Восстановление выбранной версии из журнала (текущее состояние сохраняется как новая версия) | Ж |
+| К.1.08 | Повторная публикация через интерфейс конструктора не предусмотрена: кнопка блокируется после первого успешного publish | В |
+| К.1.09 | Исследователь может удалить ненужную анкету; связанные сессии удаляются каскадно | Ж |
+| К.1.10 | Настройка логики анкеты через вкладку Логика SurveyJS Creator; в интерфейсе есть справка по условному показу вопросов | Ж |
+| К.1.11 | Настройка сроков проведения: дата и время начала и окончания приёма ответов | О |
+| К.1.12 | Задание max_responses; при достижении лимита подсистема проведения не создаёт новые сессии | Ж |
+| К.1.13 | Разрешение или запрет анонимного прохождения (поле allow_anonymous) | Ж |
+| К.1.14 | Просмотр статистики: число сессий, завершённость, средний прогресс, распределение ответов по вопросам | О |
+| К.1.15 | Выгрузка ответов в JSON или CSV; параметры include_incomplete и anonymize на уровне API | Ж |
+| К.1.16 | Просмотр журнала версий: автор, время, краткое описание изменений | О |
+| К.1.17 | Восстановление выбранной версии из журнала; текущее состояние сохраняется как новая версия | Ж |
 | К.1.18 | В списке анкет отображается статус проведения: черновик, ещё не начато, активна, завершено | Ж |
-| К.1.19 | Копирование публичной ссылки `/s/{id}` и открытие страницы прохождения в новой вкладке | Ж |
+| К.1.19 | Копирование публичной ссылки /s/{id} и открытие страницы прохождения в новой вкладке | Ж |
 
 #### 2.2.2. Нефункциональные требования
 
@@ -52,30 +52,43 @@
 
 | ID | Формулировка | Приоритет |
 |----|----------------|-----------|
-| К.2.01 | Создание, изменение, публикация, удаление и восстановление версий защищены JWT; роли `admin` и `researcher` имеют полный доступ к мутациям | О |
+| К.2.01 | Создание, изменение, публикация, удаление и восстановление версий защищены JWT; роли admin и researcher имеют доступ к мутациям | О |
 | К.2.02 | API описано в OpenAPI (Swagger); в продакшене предполагается HTTPS через обратный прокси | Ж |
-| К.2.03 | `survey_json` и снимки версий хранятся в PostgreSQL как JSONB | О |
-| К.2.04 | Автосохранение с интервалом ~1 с не блокирует интерфейс редактора | В |
-| К.2.05 | Светлая и тёмная тема MUI и SurveyJS Creator; выбор темы сохраняется в `localStorage` (`theme_mode`) | В |
+| К.2.03 | survey_json и снимки версий хранятся в PostgreSQL как JSONB | О |
+| К.2.04 | Автосохранение с интервалом около 1 с не блокирует интерфейс редактора | В |
+| К.2.05 | Светлая и тёмная тема MUI и SurveyJS Creator; выбор темы сохраняется в localStorage (ключ theme_mode) | В |
 | К.2.06 | Русская локализация интерфейса SurveyJS Creator и форм | Ж |
-| К.2.07 | Подсистема может подключаться к оболочке АСНИ как Module Federation remote (`surveyConstructor`) | В |
-| К.2.08 | При `PROXY_AUTH_ENABLED=true` допускается аутентификация через заголовки `X-Forwarded-User` и `X-Forwarded-Role` от доверенного прокси | В |
+| К.2.07 | Подсистема может подключаться к оболочке АСНИ как Module Federation remote surveyConstructor | В |
+| К.2.08 | При PROXY_AUTH_ENABLED=true допускается аутентификация через заголовки X-Forwarded-User и X-Forwarded-Role от доверенного прокси | В |
 
 ---
 
 ### 2.3. Диаграмма прецедентов
 
+На рисунке 2.1 схема выстроена сверху вниз: от действий исследователя к подсистеме-конструктору. Удобно экспортировать в PNG на https://mermaid.live и вставить в Word.
+
 ```mermaid
-graph LR
-    A[Исследователь / Администратор] --> B(Создать анкету)
-    A --> C(Редактировать анкету)
-    A --> D(Опубликовать анкету)
-    A --> E(Удалить анкету)
-    A --> F(Просмотреть статистику)
-    A --> G(Выгрузить ответы)
-    A --> H(Просмотреть историю версий)
-    A --> I(Восстановить версию)
-    B --> J[Подсистема-конструктор]
+flowchart TD
+    A[Исследователь или администратор]
+    B[Создать анкету]
+    C[Редактировать анкету]
+    D[Опубликовать анкету]
+    E[Удалить анкету]
+    F[Просмотреть статистику]
+    G[Выгрузить ответы]
+    H[Просмотреть историю версий]
+    I[Восстановить версию]
+    J[Подсистема-конструктор]
+
+    A --> B
+    A --> C
+    A --> D
+    A --> E
+    A --> F
+    A --> G
+    A --> H
+    A --> I
+    B --> J
     C --> J
     D --> J
     E --> J
@@ -87,6 +100,8 @@ graph LR
 
 Рисунок 2.1 — Диаграмма прецедентов подсистемы-конструктора
 
+Исследователь или администратор с ролью admin или researcher создаёт анкету и открывает редактор. В редакторе меняется структура вопросов, логика показа, сроки и лимиты. Публикация делает анкету видимой для респондентов. Статистика и выгрузка нужны уже после сбора ответов. Журнал версий позволяет посмотреть, кто и когда менял анкету, и при необходимости откатиться к более раннему снимку survey_json.
+
 ---
 
 ### 2.4. Диаграмма последовательности (создание, сохранение, публикация)
@@ -94,37 +109,39 @@ graph LR
 ```mermaid
 sequenceDiagram
     actor U as Исследователь
-    participant F as Frontend (React)
+    participant F as Frontend React
     participant API as Backend API
     participant DB as PostgreSQL
 
     U->>F: Открывает редактор
-    F->>API: GET /surveys/{id}
+    F->>API: GET /surveys/id
     API->>DB: SELECT survey
     DB-->>API: survey_json, metadata
     API-->>F: 200 OK
-    F->>F: Инициализирует SurveyJS Creator (ru)
+    F->>F: Инициализирует SurveyJS Creator ru
 
     U->>F: Меняет вопросы или настройки
-    F->>API: PUT /surveys/{id}
-    API->>DB: UPDATE + запись в survey_versions
+    F->>API: PUT /surveys/id
+    API->>DB: UPDATE и запись в survey_versions
     DB-->>API: OK
     API-->>F: 200 OK
 
-    U->>F: «Опубликовать»
-    F->>API: POST /surveys/{id}/publish
-    API->>DB: is_published=true, published_at
+    U->>F: Публикация
+    F->>API: POST /surveys/id/publish
+    API->>DB: is_published true, published_at
     API-->>F: 200 OK
     F->>F: Блокирует кнопку публикации
 ```
 
 Рисунок 2.2 — Последовательность создания и публикации анкеты
 
+После входа браузер запрашивает анкету по REST. Сервер отдаёт survey_json и поля проведения. Creator инициализируется с русской локалью. Любое сохранение (автоматическое или по кнопке) уходит PUT-запросом; backend сравнивает поля, увеличивает version и добавляет строку в survey_versions. Публикация отдельным POST: выставляются is_published и published_at, в журнал пишется событие публикации. Интерфейс больше не предлагает повторно опубликовать ту же анкету.
+
 ---
 
 ### 2.5. Диаграмма компонентов
 
-На рисунке 2.3 показано вертикальное разбиение: сверху клиент на React, ниже REST API на FastAPI, внизу PostgreSQL. Такой вид удобно экспортировать из редактора Mermaid (https://mermaid.live) в PNG и вставить в Word без поворота.
+На рисунке 2.3 вертикальное разбиение: клиент React, ниже REST API на FastAPI, внизу PostgreSQL. Экспорт в PNG: https://mermaid.live.
 
 ```mermaid
 flowchart TD
@@ -132,12 +149,12 @@ flowchart TD
 
     subgraph KLIENT[Клиентская часть React]
         direction TB
-        R[App.tsx: маршруты login, admin, public /s]
-        L[AdminSurveysListPage: список анкет]
-        E[AdminSurveyEditorPage + SurveyJS Creator]
-        V[VersionHistoryPanel: журнал версий]
-        S[SurveyStatsPage: статистика и выгрузка]
-        T[AppRoot, ThemeContext, CreatorViewport]
+        R[App.tsx маршруты login admin public]
+        L[AdminSurveysListPage список анкет]
+        E[AdminSurveyEditorPage и SurveyJS Creator]
+        V[VersionHistoryPanel журнал версий]
+        S[SurveyStatsPage статистика и выгрузка]
+        T[AppRoot ThemeContext CreatorViewport]
         R --> L
         R --> E
         R --> S
@@ -147,11 +164,11 @@ flowchart TD
 
     subgraph SERVER[Серверная часть FastAPI]
         direction TB
-        API[Роутер app/api/v1/surveys.py]
+        API[Роутер surveys.py]
         SV[SurveyService]
         VER[SurveyVersionService]
         SES[SessionService]
-        AUTH[Auth: JWT и proxy-заголовки]
+        AUTH[Auth JWT и proxy]
         API --> SV
         API --> VER
         API --> SES
@@ -160,9 +177,9 @@ flowchart TD
 
     subgraph BD[СУБД PostgreSQL]
         direction TB
-        T1[(таблица surveys)]
-        T2[(таблица survey_versions)]
-        T3[(таблица survey_sessions)]
+        T1[(surveys)]
+        T2[(survey_versions)]
+        T3[(survey_sessions)]
     end
 
     U --> L
@@ -176,137 +193,158 @@ flowchart TD
     SES --> T3
 ```
 
-Рисунок 2.3 — Компоненты подсистемы-конструктора (вертикальная схема)
+Рисунок 2.3 — Компоненты подсистемы-конструктора
 
-Ниже по слоям перечислены основные модули и то, за что каждый отвечает в работе конструктора.
+Клиентская часть, каталог frontend/src.
 
-Клиентская часть (React, каталог frontend/src).
+App.tsx задаёт маршрутизацию SPA. После входа пользователь попадает в /admin/surveys, открывает редактор /admin/surveys/:id и статистику /admin/surveys/:id/stats. Публичное прохождение идёт по /s/:surveyId в том же приложении, но верхняя административная панель на этих URL скрыта.
 
-App.tsx задаёт маршрутизацию SPA. Пользователь после входа попадает в /admin/surveys, открывает редактор по /admin/surveys/:id, статистику по /admin/surveys/:id/stats. Публичное прохождение анкеты идёт по /s/:surveyId в том же приложении, но верхняя административная панель на этих URL скрывается, чтобы респондент не видел чужие разделы.
+AdminSurveysListPage.tsx рисует таблицу анкет: заголовок, дата создания, опубликована ли анкета, статус проведения (черновик, ещё не начато, активна, завершено). Статус считается по start_date, starts_at, end_date, ends_at. Есть счётчики: всего анкет и сколько сейчас в окне приёма ответов. Доступны создание анкеты, переход в редактор, копирование ссылки /s/{id}, открытие публичной страницы, удаление. Роль student видит только список.
 
-AdminSurveysListPage.tsx рисует таблицу всех анкет. Для каждой строки видны заголовок, дата создания, опубликована ли анкета и статус проведения: черновик, ещё не начато, активна или завершено. Статус считается по полям start_date, starts_at, end_date, ends_at. На странице есть счётчики: сколько анкет всего и сколько сейчас в окне приёма ответов. Отсюда же вызываются создание новой анкеты, переход в редактор, копирование ссылки /s/{id}, открытие публичной страницы в новой вкладке, удаление. Роль student может только просматривать список без кнопок редактирования и статистики.
+AdminSurveyEditorPage.tsx основной экран конструктора. SurveyJS Creator с русской локалью, автосохранением около 1 с для admin и researcher, ручным сохранением, однократной публикацией, удалением, диалогом сроков и лимитов, справкой по условной логике. CreatorViewport и EditorChromeContext при прокрутке прячут навигацию и панель инструментов Creator.
 
-AdminSurveyEditorPage.tsx это основной экран конструктора. Внутри инициализируется SurveyJS Creator с русской локалью, вкладками дизайна, логики и предпросмотра. Редактор пишет результат в поле survey_json. Автосохранение с задержкой около одной секунды отправляет PUT /surveys/{id} только для ролей admin и researcher. Отдельно доступны ручное сохранение, однократная публикация, удаление анкеты, диалог сроков и лимитов (max_responses, allow_anonymous), встроенная справка по условному показу вопросов. Компоненты CreatorViewport и EditorChromeContext при прокрутке полотна Creator прячут верхнюю навигацию и панель инструментов, чтобы оставалось больше места под вопросы.
+VersionHistoryPanel.tsx справа в ResizableSplitPane: список версий, diff, восстановление с подтверждением. Состояние панели в localStorage.
 
-VersionHistoryPanel.tsx показывается справа от редактора в ResizableSplitPane. Панель запрашивает GET /surveys/{id}/versions, выводит список ревизий с автором, временем и кратким текстом изменений. По кнопке восстановления вызывается POST /surveys/{id}/versions/{version_id}/restore; после ответа сервера в Creator подставляется сохранённый снимок survey_json. Свёрнутость панели запоминается в localStorage.
+SurveyStatsPage.tsx: карточки метрик, распределение по вопросам, таблица сессий, ссылки на экспорт CSV и JSON.
 
-SurveyStatsPage.tsx загружает анкету, агрегаты GET /surveys/{id}/stats и список сессий GET /surveys/{id}/sessions. На экране карточки с числом сессий, долей завершённых, средним прогрессом, полоса завершённости, распределение ответов по вопросам и таблица сессий с возможностью показать все строки. Ссылки ведут на экспорт CSV или JSON через /api/v1/surveys/{id}/export.
+AppRoot.tsx и ThemeContext.tsx: тема MUI, theme_mode в localStorage. theme.ts и surveyCreatorTheme.ts задают цвет primary #003399.
 
-AppRoot.tsx и ThemeContext.tsx подключают MUI ThemeProvider, BrowserRouter и режим светлой или тёмной темы. Выбор хранится в localStorage под ключом theme_mode. Файлы theme.ts и surveyCreatorTheme.ts задают цвета интерфейса, в том числе primary #003399.
+api.ts на axios: Bearer из localStorage, при 401 редирект на /login.
 
-Модуль api.ts на axios собирает все вызовы к backend: токен Bearer из localStorage, при ответе 401 очистка авторизации и переход на /login. Типы Survey, SurveyVersion, Session описывают поля, которые ждёт UI.
+Серверная часть, каталог backend/app.
 
-Серверная часть (FastAPI, каталог backend/app).
+Роутер surveys.py принимает REST. Мутации через has_role(admin), на практике доступны admin и researcher. Чтение списка, анкеты, stats и versions любому активному пользователю с JWT.
 
-Роутер surveys.py принимает HTTP-запросы от браузера. Создание, изменение, публикация, удаление и восстановление версии проходят через зависимость has_role(admin): на практике доступ есть у admin и researcher. Чтение списка, одной анкеты, статистики и журнала версий открыто любому активному пользователю с валидным JWT.
+SurveyService: CRUD, publish, статистика, проверки для public API, подсчёт завершённых для max_responses. При update пишется версия.
 
-SurveyService инкапсулирует работу с таблицей surveys: CRUD, publish, расчёт статистики по сессиям, проверку доступности анкеты для публичного API, подсчёт завершённых ответов для лимита max_responses. При update сравниваются старые и новые значения полей, увеличивается счётчик version, в журнал пишется запись через SurveyVersionService.
+SurveyVersionService и survey_diff.py: снимки survey_json, структура changes, restore.
 
-SurveyVersionService обслуживает таблицу survey_versions. На создание, правку, публикацию и restore сохраняется снимок survey_json и структура changes из модуля survey_diff.py. Если журнал пуст при первом запросе списка версий, создаётся начальная запись о создании анкеты.
+SessionService: список сессий и экспорт; сессии создаёт подсистема проведения.
 
-SessionService нужен конструктору для списка сессий на странице статистики и для выгрузки ответов. Сами сессии создаёт подсистема проведения через public API, но данные лежат в той же базе.
+auth.py: JWT и опционально proxy-заголовки от оболочки АСНИ.
 
-Модуль auth.py выдаёт JWT по логину и паролю, проверяет Bearer в защищённых маршрутах. При PROXY_AUTH_ENABLED=true допускается вход по заголовкам X-Forwarded-User и X-Forwarded-Role от доверенного прокси оболочки АСНИ.
+PostgreSQL: surveys, survey_versions, survey_sessions. Alembic при старте survey-api. ON DELETE CASCADE при удалении анкеты.
 
-Слой данных.
-
-PostgreSQL хранит surveys (метаданные и survey_json в JSONB), survey_versions (история правок) и survey_sessions (ответы респондентов). Миграции Alembic поднимаются при старте контейнера survey-api. Связь survey_id в сессиях и версиях настроена с ON DELETE CASCADE: при удалении анкеты исчезают и её сессии, и история версий.
-
-Обмен между слоями идёт по REST в формате JSON. В production браузер обращается к nginx контейнера survey-frontend, тот проксирует /api на survey-api. В режиме разработки Vite на порту 5173 проксирует /api на localhost:8001. Тот же фронтенд может отдаваться как Module Federation remote surveyConstructor для встраивания в shell АСНИ.
+В production nginx в survey-frontend проксирует /api на survey-api. В dev Vite на 5173 проксирует на 8001. Remote surveyConstructor для shell АСНИ.
 
 ---
 
 ### 2.6. Описание программной реализации
 
-#### 2.6.1. Клиентский модуль (`frontend/`)
+#### 2.6.1. Клиентский модуль
 
-**Маршрутизация и оболочка.** `App.tsx` задаёт маршруты `/login`, `/admin/surveys`, `/admin/surveys/:id`, `/admin/surveys/:id/stats`; на публичных путях `/s/*` верхняя панель администратора скрыта. `AppRoot.tsx` подключает `BrowserRouter`, MUI `ThemeProvider`, `EditorChromeProvider` и читает `theme_mode` из `localStorage`.
+Маршрутизация и оболочка.
 
-**Список анкет** (`AdminSurveysListPage.tsx`). Таблица с заголовком, датой создания, статусом публикации и статусом проведения (черновик / ещё не начато / активна / завершено — по `start_date`, `starts_at`, `end_date`, `ends_at`). Карточки-счётчики: всего анкет и сколько сейчас «активны». Действия: создать (`POST /surveys` с пустым `survey_json`), редактировать, статистика, копировать ссылку `/s/{id}`, открыть публичную страницу, удалить. Роль `student` видит список, но не получает кнопок редактирования и статистики.
+Файл App.tsx описывает маршруты /login, /admin/surveys, /admin/surveys/:id, /admin/surveys/:id/stats. На путях /s/* верхняя панель администратора не показывается, чтобы респондент не попадал в чужие разделы. AppRoot.tsx подключает BrowserRouter, MUI ThemeProvider, EditorChromeProvider и читает theme_mode из localStorage.
 
-**Редактор** (`AdminSurveyEditorPage.tsx`). SurveyJS Creator с русской локалью, вкладкой логики и автосохранением (`autoSaveEnabled`, задержка 1 с) для `admin`/`researcher`. Отдельные кнопки: сохранить вручную, опубликовать (один раз), удалить, настройки проведения, справка по условной логике, переход к статистике. Диалог настроек записывает `start_date`, `end_date`, `starts_at`, `ends_at`, `max_responses`, `allow_anonymous` (в UI даты дублируются в обе пары полей для совместимости с API проведения). Справа — панель истории версий (`VersionHistoryPanel`) в `ResizableSplitPane`; состояние свёрнутости панели хранится в `localStorage`. При прокрутке области Creator верхняя навигация и панель инструментов Creator скрываются (`CreatorViewport`, `EditorChromeContext`).
+Список анкет, AdminSurveysListPage.tsx.
 
-**История версий** (`VersionHistoryPanel.tsx`). Загрузка `GET /surveys/{id}/versions`, раскрытие деталей изменений, восстановление через `POST .../versions/{version_id}/restore` с подтверждением. После restore редактор подставляет `survey_json` из ответа.
+Страница загружает GET /surveys и рисует таблицу. Для каждой анкеты вычисляется conductingStatus: если не опубликована, черновик; иначе сравниваются даты начала и конца из полей start_date, starts_at, end_date, ends_at. Показываются карточки с числом всех анкет и активных. Кнопка создания вызывает POST /surveys с пустым survey_json и переводит в редактор. Для опубликованных доступны копирование ссылки через publicSurveyLink.ts и открытие /s/{id}. Удаление с подтверждением вызывает DELETE /surveys/{id}. Пользователь student после getCurrentUser не видит кнопок редактирования и статистики.
 
-**Статистика** (`SurveyStatsPage.tsx`). Параллельно запрашивает анкету, `GET /stats` и `GET /sessions`. Карточки: всего сессий, завершено, в процессе, доля завершения, средний прогресс; полоса завершённости; горизонтальные диаграммы по вопросам; таблица сессий (первые 10 строк, кнопка «показать все»). Экспорт: ссылки на `/api/v1/surveys/{id}/export?format=csv|json&include_incomplete=true` (флаг `anonymize` в UI не вынесен, но API его поддерживает).
+Редактор, AdminSurveyEditorPage.tsx.
 
-**API-клиент** (`api.ts`). Axios, таймаут 30 с, Bearer из `localStorage`, при 401 — очистка токена и редирект на `/login`. Типизированные вызовы для surveys, versions, auth.
+При открытии /admin/surveys/:id или создании новой анкеты поднимается SurveyCreator с showLogicTab. Локаль ru подключается из survey-creator-core и survey-core. autoSaveEnabled с задержкой 1000 мс шлёт updateSurvey только если роль admin или researcher. Кнопка публикации вызывает publishSurvey и после успеха становится disabled, если is_published уже true. Диалог настроек (иконка шестерёнки) редактирует start_date, end_date, starts_at, ends_at, max_responses, allow_anonymous; при сохранении даты дублируются в обе пары полей, чтобы и конструктор, и public API читали согласованные значения. Справка (иконка вопроса) объясняет условия visibleIf без кода. Справа VersionHistoryPanel в ResizableSplitPane; ширина и collapsed хранятся в localStorage с префиксом survey-editor-version-panel.
 
-**Тема и Creator** (`theme.ts`, `surveyCreatorTheme.ts`, `survey-creator-overrides.css`). Палитра ННГУ (primary `#003399`), шрифт Inter.
+История версий, VersionHistoryPanel.tsx.
 
-**Интеграция с АСНИ.** `vite.config.ts` собирает remote `surveyConstructor` с экспортом `./App` и `./api` (`@originjs/vite-plugin-federation`), общие singleton: `react`, `react-dom`, `react-router-dom`, `axios`.
+Компонент по surveyId запрашивает версии, показывает version_number, edited_by_name, change_summary, раскрывает changes. Restore открывает диалог и вызывает restoreSurveyVersion; колбэк onRestore обновляет JSON в Creator. Если список пуст, backend при первом GET создаёт синтетическую запись о создании.
 
-#### 2.6.2. Серверный модуль (`backend/`)
+Статистика, SurveyStatsPage.tsx.
 
-**Маршруты анкет** (`app/api/v1/surveys.py`):
+Три параллельных запроса: анкета, stats, sessions. Отображаются total_sessions, completed_sessions, in_progress_sessions, completion_rate, avg_progress_pct, responses_by_question в виде горизонтальных полос. Таблица сессий: respondent_id, is_completed, progress_pct, времена; сначала 10 строк, кнопка показать все. Экспорт: прямые ссылки на /api/v1/surveys/{id}/export?format=csv и format=json с include_incomplete=true. Параметр anonymize в интерфейсе не вынесен, но API его принимает (проверяется e2e_stats_and_export.py).
+
+API-клиент, api.ts.
+
+Axios с baseURL через прокси, timeout 30 с. Interceptor подставляет Authorization Bearer. При 401 токен и роль стираются, редирект /login. Экспортированы getSurveys, updateSurvey, getSurveyVersions, restoreSurveyVersion и др.
+
+Тема и интеграция.
+
+survey-creator-overrides.css и surveyCreatorTheme.ts подгоняют Creator под светлую и тёмную тему приложения. vite.config.ts настраивает federation: name surveyConstructor, exposes ./App и ./api, shared react и axios. Плагин checkBackend.ts в dev предупреждает, если API на 8001 недоступен.
+
+#### 2.6.2. Серверный модуль
+
+Маршруты app/api/v1/surveys.py.
 
 | Метод | Путь | Кто вызывает | Назначение |
 |-------|------|--------------|------------|
-| `POST` | `/surveys` | `admin`/`researcher`* | Создание |
-| `GET` | `/surveys` | любой авторизованный | Список |
-| `GET` | `/surveys/{id}` | любой авторизованный | Чтение |
-| `PUT` | `/surveys/{id}` | `admin`/`researcher`* | Частичное обновление + версия |
-| `POST` | `/surveys/{id}/publish` | `admin`/`researcher`* | Публикация |
-| `DELETE` | `/surveys/{id}` | `admin`/`researcher`* | Удаление |
-| `GET` | `/surveys/{id}/versions` | любой авторизованный | Журнал версий |
-| `GET` | `/surveys/{id}/versions/{vid}` | любой авторизованный | Детали версии |
-| `POST` | `/surveys/{id}/versions/{vid}/restore` | `admin`/`researcher`* | Восстановление |
-| `GET` | `/surveys/{id}/stats` | любой авторизованный | Агрегаты |
-| `GET` | `/surveys/{id}/sessions` | любой авторизованный | Список сессий |
-| `GET` | `/surveys/{id}/export` | `admin`/`researcher`* | JSON/CSV |
-| `GET` | `/surveys/{id}/responses` | `admin`/`researcher`* | Legacy: только завершённые |
+| POST | /surveys | admin или researcher | Создание |
+| GET | /surveys | любой авторизованный | Список |
+| GET | /surveys/{id} | любой авторизованный | Чтение |
+| PUT | /surveys/{id} | admin или researcher | Обновление и версия |
+| POST | /surveys/{id}/publish | admin или researcher | Публикация |
+| DELETE | /surveys/{id} | admin или researcher | Удаление |
+| GET | /surveys/{id}/versions | любой авторизованный | Журнал |
+| GET | /surveys/{id}/versions/{vid} | любой авторизованный | Детали версии |
+| POST | /surveys/{id}/versions/{vid}/restore | admin или researcher | Восстановление |
+| GET | /surveys/{id}/stats | любой авторизованный | Агрегаты |
+| GET | /surveys/{id}/sessions | любой авторизованный | Список сессий |
+| GET | /surveys/{id}/export | admin или researcher | JSON или CSV |
+| GET | /surveys/{id}/responses | admin или researcher | Legacy, только завершённые |
 
-\*Зависимость `has_role("admin")` в коде пропускает и роль `researcher` (`app/core/auth.py`).
+Зависимость has_role(admin) в auth.py пропускает также роль researcher.
 
-**Сервис анкет** (`survey_service.py`). CRUD, `publish_survey`, `get_stats` (счётчики сессий, `completion_rate`, `avg_progress_pct`, распределения по вопросам с учётом множественного выбора), `get_public_survey` для проведения, `completed_response_count` для лимита ответов.
+SurveyService (survey_service.py).
 
-**Сервис версий** (`survey_version_service.py`, `utils/survey_diff.py`). На create/update/publish/restore пишется строка в `survey_versions` с `version_number`, `edited_by_name`, `change_summary`, структурой `changes` (diff полей и структуры `survey_json`), `survey_json_snapshot`. Восстановление поднимает снимок в текущую анкету и создаёт новую запись журнала. Если журнал пуст при первом `GET /versions`, создаётся синтетическая запись «создана».
+list_surveys сортирует по created_at DESC. update_survey применяет только переданные поля из SurveyUpdate, считает diff через compute_field_changes, увеличивает version, вызывает SurveyVersionService.record_update_after_apply. get_stats обходит сессии анкеты, считает completion_rate и avg_progress_pct, для каждого вопроса из survey_json собирает частоты значений (включая массивы для checkbox). get_public_survey используется public API: 404 если не опубликована, 403 если рано или поздно по датам.
 
-**Модель `surveys`** (`models/survey.py`): `title`, `description`, `survey_json` (JSONB), `is_published`, `version`, `published_at`, `start_date`, `end_date`, `starts_at`, `ends_at`, `max_responses`, `allow_anonymous`, метки времени.
+SurveyVersionService (survey_version_service.py).
 
-**Модель `survey_versions`** (миграция `0007_survey_versions.py`): FK на `surveys` с `ON DELETE CASCADE`, поля снимка и diff.
+record_created при POST /surveys. restore_version поднимает survey_json_snapshot, пишет новую версию с action restored. get_version отдаёт полный снимок для просмотра.
 
-**Аутентификация** (`auth.py`). `POST /auth/token`, `GET /auth/me`, `POST /auth/register` (если `REGISTRATION_OPEN=true`; UI регистрации нет). JWT в claim `sub` и `role`.
+Модели.
 
-**Служебные точки** (`main.py`): `GET /healthz`, `GET /api/v1/info` (метаданные подсистемы и возможностей).
+surveys: title, description, survey_json JSONB, is_published, version, published_at, start_date, end_date, starts_at, ends_at, max_responses, allow_anonymous, created_at, updated_at.
+
+survey_versions: survey_id FK, version_number, edited_by_id, edited_by_name, change_summary, changes JSONB, survey_json_snapshot JSONB, created_at.
+
+Аутентификация.
+
+POST /api/v1/auth/token по OAuth2 password flow. JWT содержит sub и role. POST /auth/register работает при REGISTRATION_OPEN; формы регистрации в UI нет. PROXY_AUTH_ENABLED читает X-Forwarded-User и X-Forwarded-Role.
+
+Служебные endpoints: GET /healthz проверяет БД; GET /api/v1/info возвращает название подсистемы и список capabilities.
 
 #### 2.6.3. Развёртывание
 
-`docker-compose.yml` поднимает три сервиса:
+docker-compose.yml поднимает три сервиса.
 
-1. **`survey-db`** — `postgres:16`, том `survey_pgdata`, healthcheck `pg_isready`, порт хоста `5433`.
-2. **`survey-api`** — образ из `backend/Dockerfile` (`python:3.11-slim`), `entrypoint.sh`: ожидание БД → `alembic upgrade head` → `uvicorn`, порт хоста `8001`.
-3. **`survey-frontend`** — образ из `frontend/Dockerfile`: сборка Vite → nginx на порту `80`, проксирование `/api` на `survey-api`.
+survey-db: образ postgres:16, база survey_db, пользователь survey, том survey_pgdata, healthcheck pg_isready, порт хоста 5433.
 
-Для разработки UI часто запускают отдельно: `cd frontend && npm run dev` (порт `5173`, прокси `/api` → `8001`). CI (GitHub Actions) поднимает compose и гоняет E2E против `http://localhost:80`.
+survey-api: build backend/Dockerfile, python 3.11-slim, entrypoint.sh ждёт БД, alembic upgrade head, uvicorn на 8000 внутри контейнера, порт хоста 8001. DATABASE_URL указывает на хост survey-db.
+
+survey-frontend: build frontend/Dockerfile, статика в nginx, порт 80, proxy_pass /api на survey-api.
+
+Разработка: cp backend/.env.example backend/.env, docker compose up, отдельно cd frontend && npm run dev на 5173. CI в GitHub Actions поднимает compose и гоняет e2e против localhost:80.
 
 #### 2.6.4. E2E-тестирование
 
-На каждый push/PR в CI поднимается стек, затем четыре скрипта на `urllib` без внешних зависимостей:
+Скрипты в каталоге scripts/, только стандартный urllib.
 
-| Скрипт | Что проверяет |
-|--------|----------------|
-| `e2e_smoke.py` | Регистрация, CRUD, publish, автосохранение, публичное прохождение |
-| `e2e_survey_lifecycle.py` | Полный цикл create → update → publish → delete |
-| `e2e_public_flow.py` | Сессия, два autosave, complete |
-| `e2e_stats_and_export.py` | `/stats`, экспорт JSON/CSV, `anonymize` |
+e2e_smoke.py: регистрация admin, создание и публикация анкеты, autosave, публичная сессия до complete.
 
-Отдельного E2E на восстановление версии пока нет.
+e2e_survey_lifecycle.py: create, list, get, update, publish, public get, delete.
+
+e2e_public_flow.py: сценарий респондента с двумя промежуточными PUT.
+
+e2e_stats_and_export.py: stats, export JSON и CSV, anonymize.
+
+Отдельного теста на restore версии пока нет.
 
 ---
 
 ### 2.7. Взаимодействие с другими подсистемами АСНИ
 
-- **Хранение данных** — PostgreSQL; `survey_json` и снимки версий в JSONB.
-- **Проведение анкетирования** — после publish анкета читается через `GET /api/v1/public/surveys/{id}`; исполнение логики на клиенте SurveyJS. Параметры `starts_at`, `ends_at`, `start_date`, `end_date`, `max_responses`, `allow_anonymous` проверяются при старте и сохранении сессии.
-- **Оболочка АСНИ** — загрузка remote `surveyConstructor` или proxy-auth от родительского приложения.
+Хранение данных. Конструктор читает и пишет PostgreSQL. survey_json и снимки версий лежат в JSONB. Сессии ответов в survey_sessions; конструктор их не создаёт, но читает для статистики и экспорта.
+
+Проведение анкетирования. После publish анкета доступна GET /api/v1/public/surveys/{id}. Логика ветвления исполняется SurveyJS Runner у респондента. Поля starts_at, ends_at, start_date, end_date, max_responses, allow_anonymous проверяются SessionService при старте и save_progress.
+
+Оболочка АСНИ. Shell может загрузить remoteEntry.js и импортировать surveyConstructor/App. Либо включить proxy-auth и не хранить отдельный логин в модуле.
 
 ---
 
 ### 2.8. Ограничения и допущения текущей версии (MVP)
 
-Одновременное редактирование одной анкеты несколькими пользователями не блокируется: последняя запись перезаписывает предыдущую. Повторная публикация через UI отключена. В журнале версий хранятся снимки и diff, но нет построчного merge двух веток редактирования. Роль `student` только просматривает список. Регистрация пользователей — через API, без формы в интерфейсе. Флаг `anonymize` при выгрузке доступен в API, но не на странице статистики.
+Два исследователя могут одновременно редактировать одну анкету: блокировок нет, побеждает последний PUT. Повторная публикация из UI отключена. Журнал версий хранит снимки, но не merge двух веток правок. student только смотрит список. Регистрация только через API. anonymize есть в export API, но не на странице статистики. E2E не покрывает restore версии.
 
 ---
 
-*Конец фрагмента. Номера рисунков и таблиц при вставке в пояснительную записку привести к сквозной нумерации документа. Диаграммы Mermaid можно экспортировать на https://mermaid.live.*
+Конец фрагмента. Номера рисунков и таблиц при вставке в пояснительную записку привести к сквозной нумерации. Диаграммы Mermaid экспортируются на https://mermaid.live.
