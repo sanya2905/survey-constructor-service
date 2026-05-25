@@ -1,0 +1,46 @@
+/* Survey Creator — align with app theme, compact density */
+
+.svc-creator {
+  font-family: "Inter", system-ui, "Segoe UI", Roboto, sans-serif !important;
+}
+
+.svc-creator .svc-tabbed-menu-item--selected,
+.svc-creator .svc-side-bar__container-header .svc-side-bar__container-actions .sv-action-bar-item--active {
+  color: var(--sjs2-color-project-brand-600, #003399) !important;
+}
+
+.svc-creator .svc-tabbed-menu-item--selected {
+  border-color: var(--sjs2-color-project-brand-600, #003399) !important;
+}
+
+/* Replace default green accents in light theme */
+.svc-creator .svc-btn,
+.svc-creator .sv-button-group__item--selected {
+  --sjs2-color-project-brand-600: #003399;
+}
+
+.svc-creator .svc-list__item--selected,
+.svc-creator .svc-item-value--selected {
+  background-color: rgba(0, 51, 153, 0.08) !important;
+}
+
+.svc-creator .svc-toolbox__item:hover {
+  border-color: rgba(0, 51, 153, 0.35);
+}
+
+/* Dark: improve contrast on panels */
+[data-theme="dark"] .svc-creator,
+.svc-creator--dark {
+  color-scheme: dark;
+}
+
+.survey-creator-zoom-host {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--mui-palette-background-default, #f8fafc);
+}
+
+.survey-creator-zoom-inner {
+  transform-origin: top left;
+}

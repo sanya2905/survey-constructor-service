@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Alert,
@@ -29,35 +29,10 @@ import { editorLocalization, settings } from "survey-creator-core";
 import "survey-creator-core/i18n/russian";
 import { surveyLocalization } from "survey-core";
 import "survey-core/i18n/russian";
-import { SurveyCreatorComponent, SurveyCreator } from "survey-creator-react";
+import { SurveyCreator } from "survey-creator-react";
 import "survey-core/survey-core.css";
 import "survey-creator-core/survey-creator-core.css";
 import { useThemeMode } from "../ThemeContext";
-import creatorThemes from "survey-creator-core/themes/index";
-
-const CREATOR_BRAND = "#003399";
-
-function getCreatorPatchedVars(): Record<string, string> {
-  const vars = { ...((creatorThemes as any)?.DefaultDark?.cssVariables || {}) };
-  vars["--sjs2-color-project-brand-600"] = CREATOR_BRAND;
-  vars["--sjs2-color-project-accent-600"] = CREATOR_BRAND;
-  return vars;
-}
-
-function getCreatorBrandOnlyVars(): Record<string, string> {
-  return {
-    "--sjs2-color-project-brand-600": CREATOR_BRAND,
-    "--sjs2-color-project-accent-600": CREATOR_BRAND,
-    "--sjs2-color-project-brand-400": "hsl(from " + CREATOR_BRAND + " h s calc(l * 1.1))",
-    "--sjs2-color-project-brand-700": "lch(from " + CREATOR_BRAND + " calc(l * 0.85) c h)",
-    "--sjs2-color-project-accent-400": "hsl(from " + CREATOR_BRAND + " h s calc(l * 1.1))",
-    "--sjs2-color-project-accent-700": "lch(from " + CREATOR_BRAND + " calc(l * 0.85) c h)",
-    "--sjs2-color-bg-brand-secondary": "rgba(from " + CREATOR_BRAND + " r g b / var(--sjs2-opacity-x010))",
-    "--sjs2-color-bg-brand-tertiary": "rgba(from " + CREATOR_BRAND + " r g b / var(--sjs2-opacity-x000))",
-    "--sjs2-color-bg-brand-secondary-dim": "rgba(from " + CREATOR_BRAND + " r g b / var(--sjs2-opacity-x015))",
-    "--sjs2-color-bg-brand-tertiary-dim": "rgba(from " + CREATOR_BRAND + " r g b / var(--sjs2-opacity-x010))",
-  };
-}
 import {
   getSurvey,
   createSurvey,
@@ -72,6 +47,7 @@ import { datetimeLocalToIso, isoToDatetimeLocalValue } from "../datetimeLocal";
 import { copyTextToClipboard, getPublicSurveyUrl } from "../publicSurveyLink";
 import VersionHistoryPanel from "../components/VersionHistoryPanel";
 import ResizableSplitPane from "../components/ResizableSplitPane";
+import CreatorViewport from "../components/CreatorViewport";
 
 const VERSION_PANEL_STORAGE = "survey-editor-version-panel";
 
@@ -223,58 +199,6 @@ export default function AdminSurveyEditorPage() {
   }, [creator]);
 
   const { mode: themeMode } = useThemeMode();
-
-  const applyCreatorTheme = useCallback(
-    (mode: "light" | "dark") => {
-      const container = document.querySelector(".svc-creator") as HTMLElement | null;
-      if (!container) return;
-
-      const darkVars = getCreatorPatchedVars();
-      const brandVars = getCreatorBrandOnlyVars();
-
-      if (mode === "dark") {
-        for (const [key, value] of Object.entries(brandVars)) {
-          container.style.setProperty(key, value);
-        }
-        for (const [key, value] of Object.entries(darkVars)) {
-          container.style.setProperty(key, value);
-        }
-      } else {
-        for (const key of Object.keys(darkVars)) {
-          container.style.removeProperty(key);
-        }
-        for (const [key, value] of Object.entries(brandVars)) {
-          container.style.setProperty(key, value);
-        }
-      }
-    },
-    [],
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-    const maxAttempts = 20;
-    let attempts = 0;
-
-    function tryApply() {
-      if (cancelled) return;
-      const container = document.querySelector(".svc-creator") as HTMLElement | null;
-      if (container) {
-        applyCreatorTheme(themeMode);
-        return;
-      }
-      attempts++;
-      if (attempts < maxAttempts) {
-        setTimeout(tryApply, 100);
-      }
-    }
-
-    const timer = setTimeout(tryApply, 100);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [themeMode, applyCreatorTheme]);
 
   const canEdit = currentUser?.role === "admin" || currentUser?.role === "researcher";
 
@@ -492,7 +416,7 @@ export default function AdminSurveyEditorPage() {
           </Box>
 
           <Button
-            color="success"
+            color="primary"
             variant="contained"
             size="small"
             onClick={() => void handlePublish()}
@@ -578,24 +502,7 @@ export default function AdminSurveyEditorPage() {
               /* ignore */
             }
           }}
-          primary={
-            <Box
-              sx={{
-                flex: 1,
-                minHeight: 0,
-                minWidth: 0,
-                height: "100%",
-                overflow: "auto",
-                "& .svc-creator": {
-                  width: "100%",
-                  height: "100%",
-                  minHeight: 400,
-                },
-              }}
-            >
-              <SurveyCreatorComponent creator={creator} />
-            </Box>
-          }
+          primary={<CreatorViewport creator={creator} themeMode={themeMode} />}
           secondary={
             <VersionHistoryPanel
               surveyId={survey.id}
@@ -618,7 +525,7 @@ export default function AdminSurveyEditorPage() {
         />
       ) : (
         <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-          <SurveyCreatorComponent creator={creator} />
+          <CreatorViewport creator={creator} themeMode={themeMode} />
         </Box>
       )}
 
