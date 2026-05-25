@@ -65,11 +65,10 @@
 
 ### 2.3. Диаграмма прецедентов
 
-На рисунке 2.1 схема выстроена сверху вниз: от действий исследователя к подсистеме-конструктору. Удобно экспортировать в PNG на https://mermaid.live и вставить в Word.
+На рисунке 2.1 прецеденты выстроены одной колонкой (без широкого веера связей), чтобы схема помещалась на лист А4 книжной ориентации. Экспорт PNG: https://mermaid.live (при сохранении задайте небольшую ширину, около 400 px, или уменьшите масштаб в Word).
 
 ```mermaid
 flowchart TD
-    A[Исследователь или администратор]
     B[Создать анкету]
     C[Редактировать анкету]
     D[Опубликовать анкету]
@@ -80,21 +79,13 @@ flowchart TD
     I[Восстановить версию]
     J[Подсистема-конструктор]
 
-    A --> B
-    A --> C
-    A --> D
-    A --> E
-    A --> F
-    A --> G
-    A --> H
-    A --> I
-    B --> J
-    C --> J
-    D --> J
-    E --> J
-    F --> J
-    G --> J
-    H --> J
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    H --> I
     I --> J
 ```
 
@@ -106,31 +97,24 @@ flowchart TD
 
 ### 2.4. Диаграмма последовательности (создание, сохранение, публикация)
 
+Схема на рисунке 2.2 в виде узкой цепочки шагов (вместо широкой sequenceDiagram с четырьмя дорожками).
+
 ```mermaid
-sequenceDiagram
-    actor U as Исследователь
-    participant F as Frontend React
-    participant API as Backend API
-    participant DB as PostgreSQL
+flowchart TD
+    S1[Исследователь открывает редактор]
+    S2[Frontend: GET /surveys/id]
+    S3[Backend: чтение surveys]
+    S4[Ответ: survey_json]
+    S5[Инициализация SurveyJS Creator]
+    S6[Правки вопросов или настроек]
+    S7[Frontend: PUT /surveys/id]
+    S8[Backend: UPDATE и запись в survey_versions]
+    S9[Исследователь: публикация]
+    S10[Frontend: POST /surveys/id/publish]
+    S11[Backend: is_published, published_at]
+    S12[Кнопка публикации заблокирована]
 
-    U->>F: Открывает редактор
-    F->>API: GET /surveys/id
-    API->>DB: SELECT survey
-    DB-->>API: survey_json, metadata
-    API-->>F: 200 OK
-    F->>F: Инициализирует SurveyJS Creator ru
-
-    U->>F: Меняет вопросы или настройки
-    F->>API: PUT /surveys/id
-    API->>DB: UPDATE и запись в survey_versions
-    DB-->>API: OK
-    API-->>F: 200 OK
-
-    U->>F: Публикация
-    F->>API: POST /surveys/id/publish
-    API->>DB: is_published true, published_at
-    API-->>F: 200 OK
-    F->>F: Блокирует кнопку публикации
+    S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8 --> S9 --> S10 --> S11 --> S12
 ```
 
 Рисунок 2.2. Последовательность создания и публикации анкеты
@@ -141,56 +125,23 @@ sequenceDiagram
 
 ### 2.5. Диаграмма компонентов
 
-На рисунке 2.3 вертикальное разбиение: клиент React, ниже REST API на FastAPI, внизу PostgreSQL. Экспорт в PNG: https://mermaid.live.
+На рисунке 2.3 компоненты идут одной узкой колонкой сверху вниз: от интерфейса к API и далее к таблицам БД. Так схема обычно помещается на лист А4 без поворота. Экспорт PNG: https://mermaid.live (ширина около 350–450 px).
 
 ```mermaid
 flowchart TD
-    U[Исследователь или администратор]
+    U[Исследователь]
+    R[App.tsx]
+    L[Список анкет]
+    E[Редактор Creator]
+    V[Журнал версий]
+    St[Статистика]
+    API[REST surveys]
+    SV[SurveyService]
+    VER[VersionService]
+    Ses[SessionService]
+    DB[(PostgreSQL)]
 
-    subgraph KLIENT[Клиентская часть React]
-        direction TB
-        R[App.tsx маршруты login admin public]
-        L[AdminSurveysListPage список анкет]
-        E[AdminSurveyEditorPage и SurveyJS Creator]
-        V[VersionHistoryPanel журнал версий]
-        S[SurveyStatsPage статистика и выгрузка]
-        T[AppRoot ThemeContext CreatorViewport]
-        R --> L
-        R --> E
-        R --> S
-        E --> V
-        E --> T
-    end
-
-    subgraph SERVER[Серверная часть FastAPI]
-        direction TB
-        API[Роутер surveys.py]
-        SV[SurveyService]
-        VER[SurveyVersionService]
-        SES[SessionService]
-        AUTH[Auth JWT и proxy]
-        API --> SV
-        API --> VER
-        API --> SES
-        API --> AUTH
-    end
-
-    subgraph BD[СУБД PostgreSQL]
-        direction TB
-        T1[(surveys)]
-        T2[(survey_versions)]
-        T3[(survey_sessions)]
-    end
-
-    U --> L
-    U --> E
-    U --> S
-    L -->|HTTP JSON| API
-    E -->|HTTP JSON| API
-    S -->|HTTP JSON| API
-    SV --> T1
-    VER --> T2
-    SES --> T3
+    U --> R --> L --> E --> V --> St --> API --> SV --> VER --> Ses --> DB
 ```
 
 Рисунок 2.3. Компоненты подсистемы-конструктора
