@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Fix alembic_version after removing duplicate migration 0007_add_survey_versions."""
+"""Fix alembic_version after removing duplicate migration 0007_add_survey_versions.
+
+Run from backend/:  python scripts/fix_alembic_version.py
+"""
 
 from __future__ import annotations
 
@@ -9,9 +12,10 @@ from pathlib import Path
 from sqlalchemy import create_engine, inspect, text
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-from alembic.env import _get_sync_url  # noqa: E402
+from app.utils.migration_db_url import get_sync_migration_url  # noqa: E402
 
 STALE_REVISION = "0007_add_survey_versions"
 TARGET_REVISION = "0007_survey_versions"
@@ -19,7 +23,9 @@ FALLBACK_REVISION = "0006_add_survey_start_date"
 
 
 def main() -> int:
-    engine = create_engine(_get_sync_url())
+    url = get_sync_migration_url()
+    print(f"Connecting: {url.split('@')[-1]}")
+    engine = create_engine(url)
     with engine.begin() as conn:
         current = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
         if current is None:

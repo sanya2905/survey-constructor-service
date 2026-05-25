@@ -32,6 +32,7 @@ cd backend && python -m alembic heads   # должен быть один: 0007_s
 в БД осталась старая запись. Из `backend/`:
 
 ```bash
+cd backend
 python scripts/fix_alembic_version.py
 python -m alembic upgrade head
 ```
