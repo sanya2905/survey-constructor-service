@@ -124,43 +124,95 @@ sequenceDiagram
 
 ### 2.5. Диаграмма компонентов
 
+На рисунке 2.3 показано вертикальное разбиение: сверху клиент на React, ниже REST API на FastAPI, внизу PostgreSQL. Такой вид удобно экспортировать из редактора Mermaid (https://mermaid.live) в PNG и вставить в Word без поворота.
+
 ```mermaid
-graph TB
-    subgraph Frontend
-        A[App.tsx / маршруты]
-        B[AdminSurveyEditorPage + SurveyJS Creator]
-        C[AdminSurveysListPage]
-        D[SurveyStatsPage]
-        E[VersionHistoryPanel]
-        F[ThemeContext / AppRoot]
-        G[CreatorViewport / EditorChromeContext]
+flowchart TD
+    U[Исследователь или администратор]
+
+    subgraph KLIENT[Клиентская часть React]
+        direction TB
+        R[App.tsx: маршруты login, admin, public /s]
+        L[AdminSurveysListPage: список анкет]
+        E[AdminSurveyEditorPage + SurveyJS Creator]
+        V[VersionHistoryPanel: журнал версий]
+        S[SurveyStatsPage: статистика и выгрузка]
+        T[AppRoot, ThemeContext, CreatorViewport]
+        R --> L
+        R --> E
+        R --> S
+        E --> V
+        E --> T
     end
-    subgraph Backend
-        H[FastAPI /surveys]
-        I[SurveyService]
-        J[SurveyVersionService]
-        K[SessionService]
-        L[Auth JWT / proxy]
+
+    subgraph SERVER[Серверная часть FastAPI]
+        direction TB
+        API[Роутер app/api/v1/surveys.py]
+        SV[SurveyService]
+        VER[SurveyVersionService]
+        SES[SessionService]
+        AUTH[Auth: JWT и proxy-заголовки]
+        API --> SV
+        API --> VER
+        API --> SES
+        API --> AUTH
     end
-    subgraph DB
-        M[(PostgreSQL: surveys, survey_versions, survey_sessions)]
+
+    subgraph BD[СУБД PostgreSQL]
+        direction TB
+        T1[(таблица surveys)]
+        T2[(таблица survey_versions)]
+        T3[(таблица survey_sessions)]
     end
-    A --> B
-    A --> C
-    A --> D
-    B --> E
-    B -->|REST| H
-    C -->|REST| H
-    D -->|REST| H
-    H --> I
-    H --> J
-    H --> K
-    I --> M
-    J --> M
-    K --> M
+
+    U --> L
+    U --> E
+    U --> S
+    L -->|HTTP JSON| API
+    E -->|HTTP JSON| API
+    S -->|HTTP JSON| API
+    SV --> T1
+    VER --> T2
+    SES --> T3
 ```
 
-Рисунок 2.3 — Компоненты подсистемы-конструктора
+Рисунок 2.3 — Компоненты подсистемы-конструктора (вертикальная схема)
+
+Ниже по слоям перечислены основные модули и то, за что каждый отвечает в работе конструктора.
+
+Клиентская часть (React, каталог frontend/src).
+
+App.tsx задаёт маршрутизацию SPA. Пользователь после входа попадает в /admin/surveys, открывает редактор по /admin/surveys/:id, статистику по /admin/surveys/:id/stats. Публичное прохождение анкеты идёт по /s/:surveyId в том же приложении, но верхняя административная панель на этих URL скрывается, чтобы респондент не видел чужие разделы.
+
+AdminSurveysListPage.tsx рисует таблицу всех анкет. Для каждой строки видны заголовок, дата создания, опубликована ли анкета и статус проведения: черновик, ещё не начато, активна или завершено. Статус считается по полям start_date, starts_at, end_date, ends_at. На странице есть счётчики: сколько анкет всего и сколько сейчас в окне приёма ответов. Отсюда же вызываются создание новой анкеты, переход в редактор, копирование ссылки /s/{id}, открытие публичной страницы в новой вкладке, удаление. Роль student может только просматривать список без кнопок редактирования и статистики.
+
+AdminSurveyEditorPage.tsx это основной экран конструктора. Внутри инициализируется SurveyJS Creator с русской локалью, вкладками дизайна, логики и предпросмотра. Редактор пишет результат в поле survey_json. Автосохранение с задержкой около одной секунды отправляет PUT /surveys/{id} только для ролей admin и researcher. Отдельно доступны ручное сохранение, однократная публикация, удаление анкеты, диалог сроков и лимитов (max_responses, allow_anonymous), встроенная справка по условному показу вопросов. Компоненты CreatorViewport и EditorChromeContext при прокрутке полотна Creator прячут верхнюю навигацию и панель инструментов, чтобы оставалось больше места под вопросы.
+
+VersionHistoryPanel.tsx показывается справа от редактора в ResizableSplitPane. Панель запрашивает GET /surveys/{id}/versions, выводит список ревизий с автором, временем и кратким текстом изменений. По кнопке восстановления вызывается POST /surveys/{id}/versions/{version_id}/restore; после ответа сервера в Creator подставляется сохранённый снимок survey_json. Свёрнутость панели запоминается в localStorage.
+
+SurveyStatsPage.tsx загружает анкету, агрегаты GET /surveys/{id}/stats и список сессий GET /surveys/{id}/sessions. На экране карточки с числом сессий, долей завершённых, средним прогрессом, полоса завершённости, распределение ответов по вопросам и таблица сессий с возможностью показать все строки. Ссылки ведут на экспорт CSV или JSON через /api/v1/surveys/{id}/export.
+
+AppRoot.tsx и ThemeContext.tsx подключают MUI ThemeProvider, BrowserRouter и режим светлой или тёмной темы. Выбор хранится в localStorage под ключом theme_mode. Файлы theme.ts и surveyCreatorTheme.ts задают цвета интерфейса, в том числе primary #003399.
+
+Модуль api.ts на axios собирает все вызовы к backend: токен Bearer из localStorage, при ответе 401 очистка авторизации и переход на /login. Типы Survey, SurveyVersion, Session описывают поля, которые ждёт UI.
+
+Серверная часть (FastAPI, каталог backend/app).
+
+Роутер surveys.py принимает HTTP-запросы от браузера. Создание, изменение, публикация, удаление и восстановление версии проходят через зависимость has_role(admin): на практике доступ есть у admin и researcher. Чтение списка, одной анкеты, статистики и журнала версий открыто любому активному пользователю с валидным JWT.
+
+SurveyService инкапсулирует работу с таблицей surveys: CRUD, publish, расчёт статистики по сессиям, проверку доступности анкеты для публичного API, подсчёт завершённых ответов для лимита max_responses. При update сравниваются старые и новые значения полей, увеличивается счётчик version, в журнал пишется запись через SurveyVersionService.
+
+SurveyVersionService обслуживает таблицу survey_versions. На создание, правку, публикацию и restore сохраняется снимок survey_json и структура changes из модуля survey_diff.py. Если журнал пуст при первом запросе списка версий, создаётся начальная запись о создании анкеты.
+
+SessionService нужен конструктору для списка сессий на странице статистики и для выгрузки ответов. Сами сессии создаёт подсистема проведения через public API, но данные лежат в той же базе.
+
+Модуль auth.py выдаёт JWT по логину и паролю, проверяет Bearer в защищённых маршрутах. При PROXY_AUTH_ENABLED=true допускается вход по заголовкам X-Forwarded-User и X-Forwarded-Role от доверенного прокси оболочки АСНИ.
+
+Слой данных.
+
+PostgreSQL хранит surveys (метаданные и survey_json в JSONB), survey_versions (история правок) и survey_sessions (ответы респондентов). Миграции Alembic поднимаются при старте контейнера survey-api. Связь survey_id в сессиях и версиях настроена с ON DELETE CASCADE: при удалении анкеты исчезают и её сессии, и история версий.
+
+Обмен между слоями идёт по REST в формате JSON. В production браузер обращается к nginx контейнера survey-frontend, тот проксирует /api на survey-api. В режиме разработки Vite на порту 5173 проксирует /api на localhost:8001. Тот же фронтенд может отдаваться как Module Federation remote surveyConstructor для встраивания в shell АСНИ.
 
 ---
 
