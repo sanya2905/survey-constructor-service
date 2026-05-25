@@ -93,8 +93,8 @@
 }
 
 .survey-creator-viewport-host .svc-tab-designer_content {
-  min-height: max(1200px, calc(100vh - 220px));
-  padding-bottom: max(320px, 28vh);
+  min-height: max(1800px, calc(100vh - 140px));
+  padding-bottom: max(480px, 40vh);
   box-sizing: border-box;
 }
 
@@ -106,12 +106,53 @@
 .survey-creator-viewport-host .svc-tab-designer .sd-container-modern,
 .survey-creator-viewport-host .svc-tab-designer .sd-container-modern.sd-container-modern--static,
 .survey-creator-viewport-host .svc-tab-designer .sd-container-modern.sd-container-modern--responsive {
-  max-width: 720px !important;
+  max-width: 920px !important;
   width: 100%;
 }
 
 .survey-creator-viewport-host .svc-tab-designer .sd-root-modern {
-  max-width: 720px;
+  max-width: 920px;
   margin-left: auto;
   margin-right: auto;
+}
+
+/* Light theme: hover/selection — blue outline, not dark fill */
+.svc-creator--app-light .svc-hovered > .svc-question__content,
+.svc-creator--app-light .svc-question__content--selected:not(.svc-question__content--dragged) {
+  background: #ffffff !important;
+}
+
+.svc-creator--app-light .svc-hovered > .svc-question__content,
+.svc-creator--app-light .svc-question__content:focus {
+  box-shadow: 0 0 0 2px rgba(0, 51, 153, 0.28) !important;
+}
+
+.svc-creator--app-light .svc-question__content--selected:not(.svc-question__content--dragged) {
+  box-shadow: 0 0 0 2px #003399 !important;
+}
+
+.svc-creator--app-light .svc-hovered.svc-page__content,
+.svc-creator--app-light .svc-page__content--selected.svc-page__content--selected {
+  background: #ffffff !important;
+}
+
+.svc-creator--app-light .svc-hovered.svc-page__content {
+  box-shadow: 0 0 0 2px rgba(0, 51, 153, 0.22) !important;
+}
+
+.svc-creator--app-light .sd-panel .svc-hovered > .svc-question__content:not(.svc-question__content--dragged)::after {
+  box-shadow: 0 0 0 2px rgba(0, 51, 153, 0.28) inset !important;
+}
+
+.svc-creator--app-light .svc-survey-element-toolbar__item:hover,
+.svc-creator--app-light .svc-survey-element-toolbar__item:focus-visible {
+  background-color: rgba(0, 51, 153, 0.08) !important;
+}
+
+.svc-creator--app-light .svc-survey-element-toolbar__item.svc-survey-element-toolbar__item--active {
+  background-color: rgba(0, 51, 153, 0.12) !important;
+}
+
+.svc-creator--app-light .svc-survey-element-toolbar__item.svc-survey-element-toolbar__item--active use {
+  fill: #003399 !important;
 }
