@@ -47,5 +47,8 @@ if [[ -f .env ]] && grep -q 'survey-db' .env 2>/dev/null; then
 fi
 echo "Убедитесь, что PostgreSQL запущен: docker compose up -d survey-db"
 
+echo "Checking alembic_version for stale revision ids..."
+"$PYTHON" scripts/fix_alembic_version.py || true
+
 echo "Running: $PYTHON -m alembic upgrade head"
 exec "$PYTHON" -m alembic upgrade head "$@"
