@@ -19,6 +19,14 @@ cp .env.example .env   # при первом запуске
 
 В `.env` для работы **с хоста** (Codespace) нужен `localhost:5433`, не `survey-db` (это имя только внутри Docker).
 
+Если Alembic пишет `Multiple head revisions`, удалите устаревшие файлы (остались после старых версий репозитория):
+
+```bash
+rm -f backend/alembic/versions/0003_add_survey_end_date.py
+rm -f backend/alembic/versions/0004_add_survey_start_date.py
+cd backend && python -m alembic heads   # должен быть один: 0007_survey_versions
+```
+
 Скрипт ставит зависимости из `requirements.txt` и запускает `python -m alembic upgrade head`.
 **Не вызывайте глобальный `alembic`** из Codespace — у него нет пакетов проекта (`pydantic_settings` и др.).
 

@@ -6,6 +6,20 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 export PYTHONPATH="${ROOT}:${PYTHONPATH:-}"
 
+# Устаревшие миграции (дублировали 0003/0004 до rename) — дают два head в Alembic.
+STALE_MIGRATIONS=(
+  "alembic/versions/0003_add_survey_end_date.py"
+  "alembic/versions/0004_add_survey_start_date.py"
+)
+for stale in "${STALE_MIGRATIONS[@]}"; do
+  if [[ -f "$stale" ]]; then
+    echo "Удаляю устаревшую миграцию: $stale"
+    rm -f "$stale"
+  fi
+done
+# Скомпилированные копии тоже могут мешать
+find alembic/versions -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true
+
 PYTHON="python3"
 
 if [[ -f .venv/bin/activate ]]; then
