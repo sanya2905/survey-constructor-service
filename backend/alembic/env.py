@@ -1,3 +1,4 @@
+import os
 import sys
 from logging.config import fileConfig
 from pathlib import Path
@@ -25,8 +26,23 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
+def _rewrite_db_host_for_local_alembic(url: str) -> str:
+    """survey-db resolves only inside docker-compose; on the host use localhost:5433."""
+    if os.getenv("ALEMBIC_SKIP_HOST_REWRITE") == "1":
+        return url
+    if Path("/.dockerenv").exists():
+        return url
+    if "survey-db" not in url:
+        return url
+    url = url.replace("survey-db", "localhost")
+    if "@localhost:5432/" in url:
+        url = url.replace("@localhost:5432/", "@localhost:5433/")
+    return url
+
+
 def _get_sync_url():
     url = settings.DATABASE_URL
+    url = _rewrite_db_host_for_local_alembic(url)
     # If using asyncpg dialect in SQLAlchemy URL, switch to psycopg2 for Alembic
     if "+asyncpg" in url:
         url = url.replace("+asyncpg", "+psycopg2")
