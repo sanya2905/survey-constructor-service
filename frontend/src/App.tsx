@@ -17,6 +17,7 @@ import { getCurrentUser, setAuthToken } from "./api";
 import { useState, useEffect } from "react";
 import UnnLogo from "./assets/UnnLogo";
 import { useThemeMode } from "./ThemeContext";
+import { useEditorChrome } from "./EditorChromeContext";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Администратор",
@@ -36,6 +37,7 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const { mode, toggleTheme } = useThemeMode();
+  const { hidden: editorChromeHidden } = useEditorChrome();
 
   useEffect(() => {
     const onStorage = () => setAuthRole(localStorage.getItem("auth_role"));
@@ -80,7 +82,17 @@ export default function App() {
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100svh", bgcolor: "background.default" }}>
       {/* ── Top Navigation Bar ── */}
       {showNav && (
-        <AppBar position="sticky" elevation={0}>
+        <AppBar
+          position="sticky"
+          elevation={0}
+          sx={{
+            transition: "transform 0.25s ease, opacity 0.2s ease",
+            transform:
+              isEditorPage && editorChromeHidden ? "translateY(-100%)" : "translateY(0)",
+            opacity: isEditorPage && editorChromeHidden ? 0 : 1,
+            pointerEvents: isEditorPage && editorChromeHidden ? "none" : "auto",
+          }}
+        >
           <Toolbar sx={{ gap: 2, minHeight: { xs: 60, sm: 64 } }}>
             {/* Logo */}
             <Box
@@ -218,7 +230,12 @@ export default function App() {
             minHeight: 0,
             display: "flex",
             flexDirection: "column",
-            height: isEditorPage ? "calc(100svh - 64px)" : "100%",
+            height:
+              isEditorPage
+                ? editorChromeHidden
+                  ? "100svh"
+                  : "calc(100svh - 64px)"
+                : "100%",
           }}
         >
           <Routes>
