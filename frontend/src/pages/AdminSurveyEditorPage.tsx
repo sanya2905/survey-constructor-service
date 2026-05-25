@@ -84,8 +84,6 @@ export default function AdminSurveyEditorPage() {
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [startsAt, setStartsAt] = useState("");
-  const [endsAt, setEndsAt] = useState("");
   const [maxResponses, setMaxResponses] = useState("");
   const [allowAnonymous, setAllowAnonymous] = useState(true);
   const [versionRefreshKey, setVersionRefreshKey] = useState(0);
@@ -128,10 +126,10 @@ export default function AdminSurveyEditorPage() {
         const s = await getSurvey(id);
         setSurvey(s);
         creator.JSON = s.survey_json ?? { title: s.title ?? "Анкета", pages: [] };
-        setStartDate(s.start_date ? isoToDatetimeLocalValue(s.start_date) : "");
-        setEndDate(s.end_date ? isoToDatetimeLocalValue(s.end_date) : "");
-        setStartsAt(s.starts_at ? isoToDatetimeLocalValue(s.starts_at) : "");
-        setEndsAt(s.ends_at ? isoToDatetimeLocalValue(s.ends_at) : "");
+        const start = s.start_date ?? s.starts_at;
+        const end = s.end_date ?? s.ends_at;
+        setStartDate(start ? isoToDatetimeLocalValue(start) : "");
+        setEndDate(end ? isoToDatetimeLocalValue(end) : "");
         setMaxResponses(s.max_responses != null ? String(s.max_responses) : "");
         setAllowAnonymous(s.allow_anonymous ?? true);
       } catch (e: unknown) {
@@ -233,11 +231,13 @@ export default function AdminSurveyEditorPage() {
     setErr(null);
     setInfo(null);
     try {
+      const startIso = datetimeLocalToIso(startDate);
+      const endIso = datetimeLocalToIso(endDate);
       const payload: Partial<Survey> = {
-        start_date: datetimeLocalToIso(startDate),
-        end_date: datetimeLocalToIso(endDate),
-        starts_at: datetimeLocalToIso(startsAt),
-        ends_at: datetimeLocalToIso(endsAt),
+        start_date: startIso,
+        end_date: endIso,
+        starts_at: startIso,
+        ends_at: endIso,
         max_responses: maxResponses ? Number(maxResponses) : null,
         allow_anonymous: allowAnonymous,
       };
@@ -388,7 +388,7 @@ export default function AdminSurveyEditorPage() {
             </Tooltip>
           )}
 
-          <Tooltip title="Настройки (сроки приёма, проведение, лимиты)">
+          <Tooltip title="Настройки (сроки, лимиты, анонимность)">
             <IconButton size="small" onClick={() => setSettingsOpen(true)} sx={{ color: "text.secondary" }}>
               <SettingsIcon fontSize="small" />
             </IconButton>
@@ -494,12 +494,9 @@ export default function AdminSurveyEditorPage() {
       </Box>
 
       <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Настройки проведения анкетирования</DialogTitle>
+        <DialogTitle>Настройки анкеты</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
-            <Typography variant="subtitle2" color="text.secondary">
-              Сроки приёма ответов
-            </Typography>
             <TextField
               label="Начало приёма ответов"
               type="datetime-local"
@@ -520,32 +517,6 @@ export default function AdminSurveyEditorPage() {
               onChange={(e) => setEndDate(e.target.value)}
               disabled={!canEdit}
               helperText="После этого времени приём ответов закрыт"
-              fullWidth
-            />
-            <Divider />
-            <Typography variant="subtitle2" color="text.secondary">
-              Проведение анкетирования
-            </Typography>
-            <TextField
-              label="Начало проведения"
-              type="datetime-local"
-              size="small"
-              slotProps={{ inputLabel: { shrink: true } }}
-              value={startsAt}
-              onChange={(e) => setStartsAt(e.target.value)}
-              disabled={!canEdit}
-              helperText="Дополнительное ограничение доступности для респондентов"
-              fullWidth
-            />
-            <TextField
-              label="Окончание проведения"
-              type="datetime-local"
-              size="small"
-              slotProps={{ inputLabel: { shrink: true } }}
-              value={endsAt}
-              onChange={(e) => setEndsAt(e.target.value)}
-              disabled={!canEdit}
-              helperText="После этого времени новые сессии не принимаются"
               fullWidth
             />
             <TextField
