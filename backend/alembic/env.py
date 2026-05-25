@@ -1,7 +1,12 @@
+import sys
 from logging.config import fileConfig
+from pathlib import Path
 
 from sqlalchemy import create_engine
 from alembic import context
+
+# Allow `alembic upgrade head` from backend/ without PYTHONPATH=/app (Docker sets that).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.core.config import settings
 from app.core.db import Base
