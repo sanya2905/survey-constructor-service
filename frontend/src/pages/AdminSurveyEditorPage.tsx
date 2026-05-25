@@ -106,6 +106,7 @@ export default function AdminSurveyEditorPage() {
   const [endsAt, setEndsAt] = useState("");
   const [maxResponses, setMaxResponses] = useState("");
   const [allowAnonymous, setAllowAnonymous] = useState(true);
+  const [versionRefreshKey, setVersionRefreshKey] = useState(0);
 
   const creator = useMemo(() => {
     const c = new SurveyCreator({
@@ -176,6 +177,7 @@ export default function AdminSurveyEditorPage() {
           if (surveyRef.current?.id) {
             const updated = await updateSurvey(surveyRef.current.id as string, payload);
             setSurvey(updated);
+            setVersionRefreshKey((k) => k + 1);
           } else {
             const created = await createSurvey(payload);
             navigate(`/admin/surveys/${created.id}`);
@@ -275,6 +277,7 @@ export default function AdminSurveyEditorPage() {
         end_date: datetimeLocalToIso(endDate),
       });
       setSurvey(updated);
+      setVersionRefreshKey((k) => k + 1);
       setInfo("Сроки проведения сохранены");
     } catch (e: unknown) {
       setErr(errorMessage(e));
@@ -293,6 +296,7 @@ export default function AdminSurveyEditorPage() {
       if (survey?.id) {
         const updated = await updateSurvey(survey.id as string, payload);
         setSurvey(updated);
+        setVersionRefreshKey((k) => k + 1);
         setInfo("Сохранено");
       } else {
         const created = await createSurvey(payload);
@@ -316,6 +320,7 @@ export default function AdminSurveyEditorPage() {
       };
       const updated = await updateSurvey(survey.id as string, payload);
       setSurvey(updated);
+      setVersionRefreshKey((k) => k + 1);
       setInfo("Настройки проведения сохранены");
       setSettingsOpen(false);
     } catch (e: unknown) {
@@ -340,6 +345,7 @@ export default function AdminSurveyEditorPage() {
       }
       const res = await publishSurvey(survey.id as string);
       setSurvey(res);
+      setVersionRefreshKey((k) => k + 1);
       setInfo("Опубликовано");
     } catch (e: unknown) {
       setErr(errorMessage(e));
@@ -435,15 +441,6 @@ export default function AdminSurveyEditorPage() {
             </IconButton>
           </Tooltip>
 
-          {survey?.id && (
-            <VersionHistoryPanel
-              surveyId={survey.id}
-              currentVersion={survey.version ?? 1}
-              onRestore={() => window.location.reload()}
-              canEdit={canEdit}
-            />
-          )}
-
           <Tooltip title="Справка: динамическая анкета">
             <IconButton size="small" onClick={() => setHelpOpen(true)} sx={{ color: "text.secondary" }}>
               <HelpOutlineIcon fontSize="small" />
@@ -529,8 +526,29 @@ export default function AdminSurveyEditorPage() {
         )}
       </Stack>
 
-      <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-        <SurveyCreatorComponent creator={creator} />
+      <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex" }}>
+        <Box sx={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+          <SurveyCreatorComponent creator={creator} />
+        </Box>
+        {survey?.id && (
+          <VersionHistoryPanel
+            surveyId={survey.id}
+            currentVersion={survey.version ?? 1}
+            refreshKey={versionRefreshKey}
+            canEdit={canEdit}
+            onRestore={(surveyJson, title) => {
+              creator.JSON = surveyJson;
+              if (title) {
+                creator.JSON = { ...surveyJson, title };
+              }
+              void getSurvey(survey.id as string).then((s) => {
+                setSurvey(s);
+                setVersionRefreshKey((k) => k + 1);
+                setInfo(`Восстановлена версия v${s.version}`);
+              });
+            }}
+          />
+        )}
       </Box>
 
       <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)} maxWidth="sm" fullWidth>

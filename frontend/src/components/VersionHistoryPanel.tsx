@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
+  Alert,
   Box,
   Button,
   Chip,
@@ -11,38 +12,113 @@ import {
   DialogTitle,
   Divider,
   IconButton,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Paper,
   Stack,
   Tooltip,
   Typography,
 } from "@mui/material";
 import HistoryIcon from "@mui/icons-material/History";
 import RestoreIcon from "@mui/icons-material/Restore";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import PersonIcon from "@mui/icons-material/Person";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import { getSurveyVersions, restoreSurveyVersion, errorMessage } from "../api";
 import type { SurveyVersion } from "../api";
 
 interface VersionHistoryPanelProps {
   surveyId: string;
   currentVersion: number;
-  onRestore?: () => void;
+  refreshKey?: number;
+  onRestore?: (surveyJson: Record<string, unknown>, title?: string) => void;
   canEdit: boolean;
+}
+
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  return new Date(dateStr).toLocaleString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function renderChanges(changes: Record<string, unknown> | null): React.ReactNode {
+  if (!changes) return null;
+
+  const fieldNames: Record<string, string> = {
+    title: "Название",
+    description: "Описание",
+    survey_json: "Структура анкеты",
+    is_published: "Статус публикации",
+    start_date: "Дата начала",
+    end_date: "Дата окончания",
+    starts_at: "Время начала",
+    ends_at: "Время окончания",
+    max_responses: "Макс. ответов",
+    allow_anonymous: "Анонимные ответы",
+    action: "Действие",
+  };
+
+  const actionMap: Record<string, string> = {
+    created: "Создана",
+    published: "Опубликована",
+    restored: "Восстановлена",
+    structure_changed: "Изменена структура",
+  };
+
+  return (
+    <Stack spacing={0.75} sx={{ mt: 0.5 }}>
+      {Object.entries(changes).map(([key, value]) => {
+        const label = fieldNames[key] || key;
+        let changeText = "";
+
+        if (key === "action") {
+          if (key === "action" && changes.from_version != null && value === "restored") {
+            changeText = `Восстановлена из v${changes.from_version}`;
+          } else {
+            changeText = actionMap[String(value)] || String(value);
+          }
+        } else if (key === "from_version") {
+          return null;
+        } else if (key === "survey_json" && value && typeof value === "object") {
+          const v = value as Record<string, unknown>;
+          if (v.questions && typeof v.questions === "object") {
+            const q = v.questions as { old?: number; new?: number };
+            changeText = `Вопросов: ${q.old ?? 0} → ${q.new ?? 0}`;
+          } else {
+            changeText = "Изменена структура";
+          }
+        } else if (value && typeof value === "object" && "old" in value && "new" in value) {
+          const oldVal = (value as { old: unknown }).old;
+          const newVal = (value as { new: unknown }).new;
+          changeText = `${oldVal ?? "—"} → ${newVal ?? "—"}`;
+        } else {
+          changeText = String(value);
+        }
+
+        return (
+          <Typography key={key} variant="caption" color="text.secondary" sx={{ display: "block" }}>
+            <Box component="span" sx={{ fontWeight: 600, color: "text.primary" }}>
+              {label}:
+            </Box>{" "}
+            {changeText}
+          </Typography>
+        );
+      })}
+    </Stack>
+  );
 }
 
 export default function VersionHistoryPanel({
   surveyId,
   currentVersion,
+  refreshKey = 0,
   onRestore,
   canEdit,
 }: VersionHistoryPanelProps) {
-  const [open, setOpen] = useState(false);
   const [versions, setVersions] = useState<SurveyVersion[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -50,14 +126,10 @@ export default function VersionHistoryPanel({
   const [selectedVersion, setSelectedVersion] = useState<SurveyVersion | null>(null);
   const [restoring, setRestoring] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (open && surveyId) {
-      loadVersions();
-    }
-  }, [open, surveyId]);
-
-  async function loadVersions() {
+  const loadVersions = useCallback(async () => {
+    if (!surveyId) return;
     setLoading(true);
     setError(null);
     try {
@@ -68,243 +140,198 @@ export default function VersionHistoryPanel({
     } finally {
       setLoading(false);
     }
-  }
+  }, [surveyId]);
+
+  useEffect(() => {
+    void loadVersions();
+  }, [loadVersions, refreshKey]);
 
   function handleToggleExpand(versionId: string) {
-    setExpandedId(expandedId === versionId ? null : versionId);
+    setExpandedId((prev) => (prev === versionId ? null : versionId));
   }
 
   function handleRestoreClick(version: SurveyVersion) {
     setSelectedVersion(version);
+    setRestoreError(null);
     setRestoreDialogOpen(true);
   }
 
   async function handleConfirmRestore() {
     if (!selectedVersion) return;
     setRestoring(true);
-    setError(null);
+    setRestoreError(null);
     try {
-      await restoreSurveyVersion(surveyId, selectedVersion.id);
+      const updated = await restoreSurveyVersion(surveyId, selectedVersion.id);
       setRestoreDialogOpen(false);
       setSelectedVersion(null);
       await loadVersions();
-      onRestore?.();
+      const json = updated.survey_json as Record<string, unknown>;
+      onRestore?.(json, updated.title);
     } catch (e: unknown) {
-      setError(errorMessage(e));
+      setRestoreError(errorMessage(e));
     } finally {
       setRestoring(false);
     }
   }
 
-  function formatDate(dateStr: string | null): string {
-    if (!dateStr) return "—";
-    const date = new Date(dateStr);
-    return date.toLocaleString("ru-RU", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  function renderChanges(changes: Record<string, unknown> | null): React.ReactNode {
-    if (!changes) return null;
-
-    const fieldNames: Record<string, string> = {
-      title: "Название",
-      description: "Описание",
-      survey_json: "Структура анкеты",
-      is_published: "Статус публикации",
-      start_date: "Дата начала",
-      end_date: "Дата окончания",
-      starts_at: "Время начала",
-      ends_at: "Время окончания",
-      max_responses: "Макс. ответов",
-      allow_anonymous: "Анонимные ответы",
-      action: "Действие",
-    };
-
-    return (
-      <Stack spacing={0.5} sx={{ mt: 1 }}>
-        {Object.entries(changes).map(([key, value]) => {
-          const label = fieldNames[key] || key;
-          let changeText = "";
-
-          if (key === "action") {
-            const actionMap: Record<string, string> = {
-              created: "Создана",
-              published: "Опубликована",
-              restored: "Восстановлена",
-            };
-            changeText = actionMap[String(value)] || String(value);
-          } else if (key === "survey_json") {
-            changeText = "Изменена структура";
-          } else if (value && typeof value === "object" && "old" in value && "new" in value) {
-            const oldVal = (value as { old: unknown }).old;
-            const newVal = (value as { new: unknown }).new;
-            changeText = `${oldVal ?? "—"} → ${newVal ?? "—"}`;
-          } else {
-            changeText = String(value);
-          }
-
-          return (
-            <Typography key={key} variant="body2" color="text.secondary">
-              <strong>{label}:</strong> {changeText}
-            </Typography>
-          );
-        })}
-      </Stack>
-    );
-  }
-
   return (
-    <>
-      <Tooltip title="История версий">
-        <IconButton
-          onClick={() => setOpen(!open)}
-          sx={{
-            bgcolor: open ? "primary.main" : "background.paper",
-            color: open ? "primary.contrastText" : "text.secondary",
-            "&:hover": { bgcolor: open ? "primary.dark" : "action.hover" },
-          }}
-        >
-          <HistoryIcon />
-        </IconButton>
-      </Tooltip>
-
-      <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        sx={{ "& .MuiDialog-paper": { maxHeight: "80vh" } }}
+    <Box
+      sx={{
+        width: 300,
+        flexShrink: 0,
+        display: "flex",
+        flexDirection: "column",
+        borderLeft: "1px solid",
+        borderColor: "divider",
+        bgcolor: "background.paper",
+        minHeight: 0,
+      }}
+    >
+      <Box
+        sx={{
+          px: 2,
+          py: 1.5,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 1,
+        }}
       >
-        <DialogTitle>
-          <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
-            <Stack direction="row" sx={{ alignItems: "center", spacing: 1 }}>
-              <HistoryIcon color="primary" />
-              <Typography variant="h6">История версий</Typography>
-              <Chip label={`v${currentVersion}`} size="small" color="primary" />
-            </Stack>
-            <IconButton onClick={() => setOpen(false)} size="small">
-              <ExpandLessIcon />
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <HistoryIcon sx={{ fontSize: 20, color: "primary.main" }} />
+          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+            История версий
+          </Typography>
+        </Stack>
+        <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+          <Chip label={`v${currentVersion}`} size="small" color="primary" />
+          <Tooltip title="Обновить">
+            <IconButton size="small" onClick={() => void loadVersions()} disabled={loading}>
+              <RefreshIcon fontSize="small" />
             </IconButton>
-          </Stack>
-        </DialogTitle>
+          </Tooltip>
+        </Stack>
+      </Box>
 
-        <Divider />
+      <Box sx={{ flex: 1, overflow: "auto", px: 1.5, py: 1.5 }}>
+        {loading && versions.length === 0 ? (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+            <CircularProgress size={28} />
+          </Box>
+        ) : error ? (
+          <Alert severity="error" sx={{ mb: 1 }}>
+            {error}
+          </Alert>
+        ) : versions.length === 0 ? (
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", py: 4 }}>
+            История пуста
+          </Typography>
+        ) : (
+          <Stack spacing={1}>
+            {versions.map((version) => {
+              const isCurrent = version.version_number === currentVersion;
+              const isExpanded = expandedId === version.id;
 
-        <DialogContent sx={{ p: 0 }}>
-          {loading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : error ? (
-            <Box sx={{ p: 2 }}>
-              <Typography color="error">{error}</Typography>
-            </Box>
-          ) : versions.length === 0 ? (
-            <Box sx={{ p: 4, textAlign: "center" }}>
-              <Typography color="text.secondary">История версий пуста</Typography>
-            </Box>
-          ) : (
-            <List sx={{ py: 0 }}>
-              {versions.map((version, index) => (
-                <Paper
+              return (
+                <Box
                   key={version.id}
-                  elevation={0}
                   sx={{
-                    mb: 1,
-                    mx: 2,
                     border: "1px solid",
-                    borderColor: version.version_number === currentVersion ? "primary.main" : "divider",
-                    borderRadius: 1,
+                    borderColor: isCurrent ? "primary.main" : "divider",
+                    borderRadius: 1.5,
+                    bgcolor: isCurrent ? "action.selected" : "background.default",
                     overflow: "hidden",
+                    transition: "border-color 0.15s",
                   }}
                 >
-                  <ListItem
-                    disablePadding
-                    secondaryAction={
-                      canEdit &&
-                      version.version_number !== currentVersion && (
-                        <Tooltip title="Восстановить эту версию">
-                          <IconButton
-                            edge="end"
-                            size="small"
-                            onClick={() => handleRestoreClick(version)}
-                            sx={{ mr: 1 }}
-                          >
-                            <RestoreIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      )
-                    }
+                  <Box
+                    sx={{
+                      px: 1.25,
+                      py: 1,
+                      cursor: "pointer",
+                      "&:hover": { bgcolor: "action.hover" },
+                    }}
+                    onClick={() => handleToggleExpand(version.id)}
                   >
-                    <ListItemButton onClick={() => handleToggleExpand(version.id)}>
-                      <ListItemIcon sx={{ minWidth: 40 }}>
+                    <Stack
+                      direction="row"
+                      spacing={0.5}
+                      sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
+                    >
+                      <Stack direction="row" spacing={0.75} sx={{ alignItems: "center", flexWrap: "wrap", gap: 0.5 }}>
                         <Chip
                           label={`v${version.version_number}`}
                           size="small"
-                          color={version.version_number === currentVersion ? "primary" : "default"}
-                          variant={version.version_number === currentVersion ? "filled" : "outlined"}
+                          color={isCurrent ? "primary" : "default"}
+                          variant={isCurrent ? "filled" : "outlined"}
+                          sx={{ height: 22, fontSize: 11 }}
                         />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={
-                          <Stack direction="row" sx={{ alignItems: "center", spacing: 1, flexWrap: "wrap" }}>
-                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                              {version.change_summary || "Изменение"}
-                            </Typography>
-                            {version.version_number === currentVersion && (
-                              <Chip label="Текущая" size="small" color="success" variant="outlined" />
-                            )}
-                            {index === 0 && version.version_number !== currentVersion && (
-                              <Chip label="Последняя" size="small" color="info" variant="outlined" />
-                            )}
-                          </Stack>
-                        }
-                        secondary={
-                          <Stack direction="row" sx={{ alignItems: "center", spacing: 2, mt: 0.5 }}>
-                            <Stack direction="row" sx={{ alignItems: "center", spacing: 0.5 }}>
-                              <PersonIcon sx={{ fontSize: 14, color: "text.secondary" }} />
-                              <Typography variant="caption" color="text.secondary">
-                                {version.edited_by_name || "Система"}
-                              </Typography>
-                            </Stack>
-                            <Stack direction="row" sx={{ alignItems: "center", spacing: 0.5 }}>
-                              <AccessTimeIcon sx={{ fontSize: 14, color: "text.secondary" }} />
-                              <Typography variant="caption" color="text.secondary">
-                                {formatDate(version.created_at)}
-                              </Typography>
-                            </Stack>
-                          </Stack>
-                        }
-                      />
-                    </ListItemButton>
-                  </ListItem>
+                        {isCurrent && (
+                          <Chip
+                            label="Текущая"
+                            size="small"
+                            color="success"
+                            variant="outlined"
+                            sx={{ height: 22, fontSize: 11 }}
+                          />
+                        )}
+                      </Stack>
+                      <Stack direction="row" spacing={0.25} sx={{ alignItems: "center" }}>
+                        {canEdit && !isCurrent && (
+                          <Tooltip title="Восстановить">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRestoreClick(version);
+                              }}
+                            >
+                              <RestoreIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        <IconButton size="small" sx={{ p: 0.25 }}>
+                          {isExpanded ? (
+                            <ExpandLessIcon sx={{ fontSize: 18 }} />
+                          ) : (
+                            <ExpandMoreIcon sx={{ fontSize: 18 }} />
+                          )}
+                        </IconButton>
+                      </Stack>
+                    </Stack>
 
-                  <Collapse in={expandedId === version.id}>
-                    <Box sx={{ px: 2, pb: 2, pt: 0 }}>
-                      <Divider sx={{ mb: 1 }} />
-                      {renderChanges(version.changes)}
-                    </Box>
+                    <Typography variant="body2" sx={{ fontWeight: 500, mt: 0.75, lineHeight: 1.3 }}>
+                      {version.change_summary || "Изменение"}
+                    </Typography>
+
+                    <Stack direction="row" spacing={1.5} sx={{ mt: 0.5, flexWrap: "wrap", gap: 0.5 }}>
+                      <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+                        <PersonIcon sx={{ fontSize: 13, color: "text.secondary" }} />
+                        <Typography variant="caption" color="text.secondary">
+                          {version.edited_by_name || "Система"}
+                        </Typography>
+                      </Stack>
+                      <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+                        <AccessTimeIcon sx={{ fontSize: 13, color: "text.secondary" }} />
+                        <Typography variant="caption" color="text.secondary">
+                          {formatDate(version.created_at)}
+                        </Typography>
+                      </Stack>
+                    </Stack>
+                  </Box>
+
+                  <Collapse in={isExpanded}>
+                    <Divider />
+                    <Box sx={{ px: 1.25, py: 1 }}>{renderChanges(version.changes)}</Box>
                   </Collapse>
-                </Paper>
-              ))}
-            </List>
-          )}
-        </DialogContent>
-
-        <Divider />
-
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Закрыть</Button>
-          <Button onClick={loadVersions} disabled={loading}>
-            Обновить
-          </Button>
-        </DialogActions>
-      </Dialog>
+                </Box>
+              );
+            })}
+          </Stack>
+        )}
+      </Box>
 
       <Dialog
         open={restoreDialogOpen}
@@ -315,16 +342,13 @@ export default function VersionHistoryPanel({
         <DialogTitle>Восстановить версию?</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary">
-            Вы собираетесь восстановить версию <strong>v{selectedVersion?.version_number}</strong>.
+            Восстановить версию <strong>v{selectedVersion?.version_number}</strong>? Текущее состояние
+            (v{currentVersion}) останется в истории; будет создана новая версия с содержимым выбранной.
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Текущая версия <strong>v{currentVersion}</strong> будет сохранена в истории, а затем будет
-            создана новая версия на основе выбранной.
-          </Typography>
-          {error && (
-            <Typography color="error" variant="body2" sx={{ mt: 1 }}>
-              {error}
-            </Typography>
+          {restoreError && (
+            <Alert severity="error" sx={{ mt: 1.5 }}>
+              {restoreError}
+            </Alert>
           )}
         </DialogContent>
         <DialogActions>
@@ -332,16 +356,16 @@ export default function VersionHistoryPanel({
             Отмена
           </Button>
           <Button
-            onClick={handleConfirmRestore}
+            onClick={() => void handleConfirmRestore()}
             color="warning"
             variant="contained"
             disabled={restoring}
-            startIcon={restoring ? <CircularProgress size={16} /> : <RestoreIcon />}
+            startIcon={restoring ? <CircularProgress size={16} color="inherit" /> : <RestoreIcon />}
           >
-            {restoring ? "Восстановление..." : "Восстановить"}
+            {restoring ? "Восстановление…" : "Восстановить"}
           </Button>
         </DialogActions>
       </Dialog>
-    </>
+    </Box>
   );
 }
