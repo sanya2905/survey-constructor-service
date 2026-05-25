@@ -24,8 +24,26 @@ cp .env.example .env   # при первом запуске
 ```bash
 rm -f backend/alembic/versions/0003_add_survey_end_date.py
 rm -f backend/alembic/versions/0004_add_survey_start_date.py
+rm -f backend/alembic/versions/0007_add_survey_versions.py   # дубликат 0007
 cd backend && python -m alembic heads   # должен быть один: 0007_survey_versions
 ```
+
+Если после удаления дубликата: `Can't locate revision identified by '0007_add_survey_versions'` —
+в БД осталась старая запись. Из `backend/`:
+
+```bash
+python scripts/fix_alembic_version.py
+python -m alembic upgrade head
+```
+
+Или вручную в PostgreSQL:
+
+```bash
+docker compose exec survey-db psql -U survey -d survey_db -c \
+  "UPDATE alembic_version SET version_num = '0007_survey_versions' WHERE version_num = '0007_add_survey_versions';"
+```
+
+Если таблицы `survey_versions` ещё нет, вместо этого поставьте `0006_add_survey_start_date` и снова `upgrade head`.
 
 Скрипт ставит зависимости из `requirements.txt` и запускает `python -m alembic upgrade head`.
 **Не вызывайте глобальный `alembic`** из Codespace — у него нет пакетов проекта (`pydantic_settings` и др.).

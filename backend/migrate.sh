@@ -10,6 +10,7 @@ export PYTHONPATH="${ROOT}:${PYTHONPATH:-}"
 STALE_MIGRATIONS=(
   "alembic/versions/0003_add_survey_end_date.py"
   "alembic/versions/0004_add_survey_start_date.py"
+  "alembic/versions/0007_add_survey_versions.py"
 )
 for stale in "${STALE_MIGRATIONS[@]}"; do
   if [[ -f "$stale" ]]; then
@@ -45,6 +46,9 @@ if [[ -f .env ]] && grep -q 'survey-db' .env 2>/dev/null; then
   echo "Подсказка: survey-db в .env — Alembic подставит localhost:5433, если survey-db недоступен."
 fi
 echo "Убедитесь, что PostgreSQL запущен: docker compose up -d survey-db"
+
+echo "Checking alembic_version for stale revision ids..."
+"$PYTHON" scripts/fix_alembic_version.py || true
 
 echo "Running: $PYTHON -m alembic upgrade head"
 exec "$PYTHON" -m alembic upgrade head "$@"
