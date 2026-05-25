@@ -9,8 +9,8 @@ import { applyCreatorThemeToElement } from "../surveyCreatorTheme";
 import "../survey-creator-overrides.css";
 
 const ZOOM_STORAGE_KEY = "survey-editor-zoom";
-const ZOOM_MIN = 70;
-const ZOOM_MAX = 115;
+const ZOOM_MIN = 50;
+const ZOOM_MAX = 130;
 const ZOOM_DEFAULT = 85;
 const ZOOM_STEP = 5;
 
@@ -60,7 +60,7 @@ export default function CreatorViewport({ creator, themeMode }: CreatorViewportP
       cancelled = true;
       clearTimeout(t);
     };
-  }, [themeMode, zoom]);
+  }, [themeMode]);
 
   function changeZoom(next: number) {
     setZoom(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, next)));
@@ -102,7 +102,7 @@ export default function CreatorViewport({ creator, themeMode }: CreatorViewportP
           max={ZOOM_MAX}
           step={ZOOM_STEP}
           onChange={(_e, v) => changeZoom(v as number)}
-          sx={{ width: { xs: 80, sm: 120 }, mx: 0.5 }}
+          sx={{ width: { xs: 100, sm: 160 }, mx: 0.5 }}
           aria-label="Масштаб конструктора"
         />
         <Tooltip title="Увеличить">

@@ -28,10 +28,27 @@
   border-color: rgba(0, 51, 153, 0.35);
 }
 
+/* Light theme: ensure readable text on light surfaces */
+.svc-creator--app-light,
+.survey-creator-zoom-host[data-theme="light"] .svc-creator {
+  color-scheme: light;
+  color: #0f172a;
+}
+
+.svc-creator--app-light .svc-toolbox,
+.svc-creator--app-light .svc-side-bar,
+.svc-creator--app-light .svc-tabbed-menu,
+.svc-creator--app-light .svc-designer-header,
+.svc-creator--app-light .svc-property-grid,
+.svc-creator--app-light .sd-root-modern {
+  color: #0f172a;
+}
+
 /* Dark: improve contrast on panels */
-[data-theme="dark"] .svc-creator,
-.svc-creator--dark {
+.svc-creator--app-dark,
+[data-theme="dark"] .svc-creator {
   color-scheme: dark;
+  color: #f1f5f9;
 }
 
 .survey-creator-zoom-host {

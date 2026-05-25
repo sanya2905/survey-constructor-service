@@ -5,7 +5,6 @@ export const CREATOR_BRAND = "#003399";
 export const CREATOR_BRAND_LIGHT = "#1A4DB3";
 export const CREATOR_BRAND_DARK = "#002277";
 
-/** Slightly smaller UI than SurveyJS default (8px base) */
 const COMPACT_UNITS: Record<string, string> = {
   "--sjs2-base-unit-size": "6px",
   "--sjs2-base-unit-spacing": "6px",
@@ -24,9 +23,15 @@ const BRAND_PALETTE: Record<string, string> = {
   "--sjs2-color-project-brand-600": CREATOR_BRAND,
   "--sjs2-color-project-brand-400": CREATOR_BRAND_LIGHT,
   "--sjs2-color-project-brand-700": CREATOR_BRAND_DARK,
+  "--sjs2-color-project-accent-600": CREATOR_BRAND,
+  "--sjs2-color-project-accent-400": CREATOR_BRAND_LIGHT,
+  "--sjs2-color-project-accent-700": CREATOR_BRAND_DARK,
 };
 
-/** App dark theme (MUI) aligned grays for Survey Creator */
+/**
+ * Gray scale with the same *roles* as SurveyJS dark theme:
+ * gray-000 = primary text, gray-900 = primary surface, gray-999 = elevated surface.
+ */
 const DARK_GRAY_SCALE: Record<string, string> = {
   "--sjs2-palette-gray-100": "#334155",
   "--sjs2-palette-gray-150": "#2D3A4F",
@@ -45,10 +50,9 @@ const DARK_GRAY_SCALE: Record<string, string> = {
   "--sjs2-palette-gray-000": "#F1F5F9",
 };
 
-/** App light theme aligned grays */
 const LIGHT_GRAY_SCALE: Record<string, string> = {
-  "--sjs2-palette-gray-100": "#F8FAFC",
-  "--sjs2-palette-gray-150": "#F1F5F9",
+  "--sjs2-palette-gray-100": "#F1F5F9",
+  "--sjs2-palette-gray-150": "#E2E8F0",
   "--sjs2-palette-gray-200": "#E2E8F0",
   "--sjs2-palette-gray-250": "#CBD5E1",
   "--sjs2-palette-gray-300": "#94A3B8",
@@ -58,43 +62,83 @@ const LIGHT_GRAY_SCALE: Record<string, string> = {
   "--sjs2-palette-gray-700": "#1E293B",
   "--sjs2-palette-gray-750": "#0F172A",
   "--sjs2-palette-gray-800": "#FFFFFF",
-  "--sjs2-palette-gray-900": "#0F172A",
-  "--sjs2-palette-gray-950": "#0F172A",
+  "--sjs2-palette-gray-900": "#F8FAFC",
+  "--sjs2-palette-gray-950": "#F1F5F9",
   "--sjs2-palette-gray-999": "#FFFFFF",
   "--sjs2-palette-gray-000": "#0F172A",
 };
 
-function buildThemeVars(mode: "light" | "dark"): Record<string, string> {
-  const base =
-    mode === "dark"
-      ? { ...(creatorThemes as { DefaultDark?: { cssVariables?: Record<string, string> } }).DefaultDark?.cssVariables }
-      : { ...(creatorThemes as { DefaultDark?: { cssVariables?: Record<string, string> } }).DefaultDark?.cssVariables };
+/** Extra semantic tokens that must differ in light mode (not only palette swap). */
+const LIGHT_SEMANTIC: Record<string, string> = {
+  "--sjs2-color-bg-static-1-primary": "#FFFFFF",
+  "--sjs2-color-bg-static-1-secondary": "rgba(15, 23, 42, 0.06)",
+  "--sjs2-color-bg-static-2-primary": "#0F172A",
+  "--sjs2-color-bg-static-2-secondary": "rgba(15, 23, 42, 0.08)",
+  "--sjs2-color-fg-neutral-on-primary": "#FFFFFF",
+  "--sjs2-color-fg-brand-on-primary": "#FFFFFF",
+  "--sjs2-color-fg-accent-on-primary": "#FFFFFF",
+};
 
-  const grayScale = mode === "dark" ? DARK_GRAY_SCALE : LIGHT_GRAY_SCALE;
+type ThemeBundle = {
+  vars: Record<string, string>;
+  className: string;
+};
 
+const appliedKeysByElement = new WeakMap<HTMLElement, Set<string>>();
+
+function getDarkBase(): Record<string, string> {
   return {
-    ...base,
-    ...COMPACT_UNITS,
-    ...grayScale,
-    ...BRAND_PALETTE,
+    ...((creatorThemes as { DefaultDark?: { cssVariables?: Record<string, string> } }).DefaultDark
+      ?.cssVariables ?? {}),
   };
 }
 
-let cachedLight: Record<string, string> | null = null;
-let cachedDark: Record<string, string> | null = null;
+function buildThemeBundle(mode: "light" | "dark"): ThemeBundle {
+  const base = getDarkBase();
+  const grayScale = mode === "dark" ? DARK_GRAY_SCALE : LIGHT_GRAY_SCALE;
+  const semantic = mode === "light" ? LIGHT_SEMANTIC : {};
 
-export function getCreatorCssVariables(mode: "light" | "dark"): Record<string, string> {
+  return {
+    className: mode === "dark" ? "svc-creator--app-dark" : "svc-creator--app-light",
+    vars: {
+      ...base,
+      ...COMPACT_UNITS,
+      ...grayScale,
+      ...BRAND_PALETTE,
+      ...semantic,
+    },
+  };
+}
+
+let cachedLight: ThemeBundle | null = null;
+let cachedDark: ThemeBundle | null = null;
+
+export function getCreatorThemeBundle(mode: "light" | "dark"): ThemeBundle {
   if (mode === "dark") {
-    if (!cachedDark) cachedDark = buildThemeVars("dark");
+    if (!cachedDark) cachedDark = buildThemeBundle("dark");
     return cachedDark;
   }
-  if (!cachedLight) cachedLight = buildThemeVars("light");
+  if (!cachedLight) cachedLight = buildThemeBundle("light");
   return cachedLight;
 }
 
 export function applyCreatorThemeToElement(container: HTMLElement, mode: "light" | "dark"): void {
-  const vars = getCreatorCssVariables(mode);
+  const { vars, className } = getCreatorThemeBundle(mode);
+
+  container.classList.remove("svc-creator--app-dark", "svc-creator--app-light");
+  container.classList.add(className);
+
+  const prevKeys = appliedKeysByElement.get(container);
+  if (prevKeys) {
+    for (const key of prevKeys) {
+      container.style.removeProperty(key);
+    }
+  }
+
+  const nextKeys = new Set<string>();
   for (const [key, value] of Object.entries(vars)) {
     container.style.setProperty(key, value);
+    nextKeys.add(key);
   }
+  appliedKeysByElement.set(container, nextKeys);
 }
