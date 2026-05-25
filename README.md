@@ -99,6 +99,15 @@ cd frontend && npm run dev
 
 Vite проксирует `/api` → `http://127.0.0.1:8001`. Одной БД (`survey-db`) недостаточно — нужен процесс API.
 
+Быстрый старт API из корня репозитория:
+
+```bash
+chmod +x scripts/dev-backend.sh
+./scripts/dev-backend.sh
+```
+
+При `npm run dev` Vite выведет подсказку, если `:8001` ещё не слушает.
+
 Откройте браузер на http://localhost:5173/ и используйте `/admin/surveys` для создания анкеты, `/s/<survey_id>` для прохождения.
 
 E2E smoke test
