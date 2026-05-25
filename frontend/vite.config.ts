@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import federation from "@originjs/vite-plugin-federation";
+import { checkBackendPlugin } from "./plugins/checkBackend";
 
 /**
  * MFE Shell integration (section 7 of architecture docs):
@@ -19,6 +20,7 @@ import federation from "@originjs/vite-plugin-federation";
  */
 export default defineConfig({
   plugins: [
+    checkBackendPlugin(),
     react(),
     federation({
       name: "surveyConstructor",
