@@ -19,7 +19,7 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 echo "Starting survey-db and survey-api..."
-docker compose up -d survey-db survey-api
+docker compose up -d --build survey-db survey-api
 
 echo "Waiting for http://127.0.0.1:8001/healthz ..."
 for _ in $(seq 1 45); do
