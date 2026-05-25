@@ -63,15 +63,19 @@ python -m alembic upgrade head
 - http://localhost:8001/healthz
 - http://localhost:8001/docs
 
-Frontend:
+Frontend (dev, Vite на :5173):
 
 ```bash
-docker compose up --build -d
+# 1) API обязателен — без survey-api будет ECONNREFUSED на :8001
+docker compose up -d survey-db survey-api
+# проверка: curl -s http://localhost:8001/healthz
+
+# 2) фронт
 cd frontend
 npm run dev
 ```
 
-Vite проксирует `/api` на API на хосте (`localhost:8001`), поэтому контейнер `survey-api` должен быть запущен и с проброшенным портом `8001` (см. `docker-compose.yml`). Без этого запросы к `/api/v1/...` дадут **502 Bad Gateway**.
+Vite проксирует `/api` → `http://127.0.0.1:8001`. Контейнер **`survey-api`** должен быть запущен (порт `8001:8000` в `docker-compose.yml`). Одной БД (`survey-db`) недостаточно.
 
 Откройте браузер на http://localhost:5173/ и используйте `/admin/surveys` для создания анкеты, `/s/<survey_id>` для прохождения.
 
