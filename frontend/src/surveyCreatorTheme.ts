@@ -77,6 +77,15 @@ const LIGHT_SEMANTIC: Record<string, string> = {
   "--sjs2-color-fg-neutral-on-primary": "#FFFFFF",
   "--sjs2-color-fg-brand-on-primary": "#FFFFFF",
   "--sjs2-color-fg-accent-on-primary": "#FFFFFF",
+  "--ctr-surface-background-color": "#E2E8F0",
+  "--sjs-layer-3-background-500": "#FFFFFF",
+  "--sjs-layer-3-background-400": "#FFFFFF",
+  "--sjs-layer-3-foreground-100": "rgba(15, 23, 42, 0.92)",
+  "--sjs-layer-3-foreground-50": "rgba(15, 23, 42, 0.55)",
+  "--ctr-survey-header-text-title-color": "#0F172A",
+  "--ctr-survey-header-text-title-color-placeholder": "rgba(15, 23, 42, 0.4)",
+  "--ctr-survey-header-text-description-color": "rgba(15, 23, 42, 0.55)",
+  "--ctr-survey-header-text-description-color-placeholder": "rgba(15, 23, 42, 0.4)",
 };
 
 type ThemeBundle = {

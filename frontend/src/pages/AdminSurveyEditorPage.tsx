@@ -453,7 +453,7 @@ export default function AdminSurveyEditorPage() {
         </Box>
       )}
 
-      <Stack direction="row" spacing={2} sx={{ alignItems: "center", px: 2, py: 1, flexWrap: "wrap" }}>
+      <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", px: 2, py: 0.5, flexWrap: "wrap", flexShrink: 0 }}>
         <TextField
           label="Начало приёма ответов"
           type="datetime-local"
@@ -490,7 +490,7 @@ export default function AdminSurveyEditorPage() {
         <ResizableSplitPane
           storageKey={VERSION_PANEL_STORAGE}
           defaultSecondaryWidth={260}
-          minPrimaryWidth={420}
+          minPrimaryWidth={360}
           minSecondaryWidth={180}
           maxSecondaryWidth={480}
           collapsed={versionPanelCollapsed}

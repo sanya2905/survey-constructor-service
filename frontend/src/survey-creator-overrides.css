@@ -2,6 +2,19 @@
 
 .svc-creator {
   font-family: "Inter", system-ui, "Segoe UI", Roboto, sans-serif !important;
+  height: 100% !important;
+  min-height: 0;
+}
+
+.survey-creator-viewport-host .svc-creator__area,
+.survey-creator-viewport-host .svc-creator__content-wrapper,
+.survey-creator-viewport-host .svc-creator__content-holder,
+.survey-creator-viewport-host .svc-creator-tab,
+.survey-creator-viewport-host .svc-creator-tab__content,
+.survey-creator-viewport-host svc-tab-designer,
+.survey-creator-viewport-host .svc-tab-designer {
+  height: 100%;
+  min-height: 0;
 }
 
 .svc-creator .svc-tabbed-menu-item--selected,
@@ -28,9 +41,9 @@
   border-color: rgba(0, 51, 153, 0.35);
 }
 
-/* Light theme: ensure readable text on light surfaces */
+/* Light theme: readable text and light designer canvas */
 .svc-creator--app-light,
-.survey-creator-zoom-host[data-theme="light"] .svc-creator {
+.survey-creator-viewport-host[data-theme="light"] .svc-creator {
   color-scheme: light;
   color: #0f172a;
 }
@@ -44,20 +57,61 @@
   color: #0f172a;
 }
 
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-designer,
+.survey-creator-viewport-host[data-theme="light"] svc-tab-designer {
+  --ctr-surface-background-color: #e2e8f0;
+  background: #e2e8f0 !important;
+}
+
+.svc-creator--app-light .svc-surface-header .sd-title .sv-string-editor,
+.svc-creator--app-light .sd-title .sv-string-editor {
+  color: #0f172a !important;
+}
+
+.svc-creator--app-light .svc-surface-header .sd-description .sv-string-editor,
+.svc-creator--app-light .sd-description .sv-string-editor {
+  color: rgba(15, 23, 42, 0.65) !important;
+}
+
 /* Dark: improve contrast on panels */
 .svc-creator--app-dark,
-[data-theme="dark"] .svc-creator {
+.survey-creator-viewport-host[data-theme="dark"] .svc-creator {
   color-scheme: dark;
   color: #f1f5f9;
 }
 
-.survey-creator-zoom-host {
+.survey-creator-viewport-host {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  background: var(--mui-palette-background-default, #f8fafc);
 }
 
-.survey-creator-zoom-inner {
-  transform-origin: top left;
+/* Scroll happens on the host; designer canvas is taller than the viewport */
+.survey-creator-viewport-host .svc-plugin-tab__content {
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+.survey-creator-viewport-host .svc-tab-designer_content {
+  min-height: max(1200px, calc(100vh - 220px));
+  padding-bottom: max(320px, 28vh);
+  box-sizing: border-box;
+}
+
+/* Do not stretch the survey paper across the full editor width */
+.survey-creator-viewport-host .svc-content-wrapper {
+  justify-content: center;
+}
+
+.survey-creator-viewport-host .svc-tab-designer .sd-container-modern,
+.survey-creator-viewport-host .svc-tab-designer .sd-container-modern.sd-container-modern--static,
+.survey-creator-viewport-host .svc-tab-designer .sd-container-modern.sd-container-modern--responsive {
+  max-width: 720px !important;
+  width: 100%;
+}
+
+.survey-creator-viewport-host .svc-tab-designer .sd-root-modern {
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
 }
