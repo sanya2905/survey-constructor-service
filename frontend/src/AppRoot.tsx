@@ -2,6 +2,7 @@ import { useCallback, useState, useMemo } from "react";
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import App from "./App";
 import { BrowserRouter } from "react-router-dom";
+import { EditorChromeProvider } from "./EditorChromeContext";
 import { createAppTheme, type ThemeMode } from "./theme";
 import { ThemeContext } from "./ThemeContext";
 
@@ -38,7 +39,9 @@ export default function AppRoot() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <BrowserRouter>
-          <App />
+          <EditorChromeProvider>
+            <App />
+          </EditorChromeProvider>
         </BrowserRouter>
       </ThemeProvider>
     </ThemeContext.Provider>
