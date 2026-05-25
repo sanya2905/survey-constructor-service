@@ -63,19 +63,41 @@ python -m alembic upgrade head
 - http://localhost:8001/healthz
 - http://localhost:8001/docs
 
-Frontend (dev, Vite на :5173):
+Frontend (dev, Vite на :5173) — **нужны 2 процесса**: API на `:8001` и Vite на `:5173`.
+
+### Вариант A: Docker (проще)
 
 ```bash
-# 1) API обязателен — без survey-api будет ECONNREFUSED на :8001
+cp backend/.env.example backend/.env   # первый раз
 docker compose up -d survey-db survey-api
-# проверка: curl -s http://localhost:8001/healthz
-
-# 2) фронт
-cd frontend
-npm run dev
+curl -s http://127.0.0.1:8001/healthz   # должен ответить {"status":"ok",...}
 ```
 
-Vite проксирует `/api` → `http://127.0.0.1:8001`. Контейнер **`survey-api`** должен быть запущен (порт `8001:8000` в `docker-compose.yml`). Одной БД (`survey-db`) недостаточно.
+Во втором терминале:
+
+```bash
+cd frontend && npm run dev
+```
+
+### Вариант B: API без Docker (Codespace / если compose API не стартует)
+
+Терминал 1 — только БД в Docker (или свой Postgres на :5433):
+
+```bash
+docker compose up -d survey-db
+cd backend && cp -n .env.example .env && ./migrate.sh
+./run_api.sh
+```
+
+Терминал 2:
+
+```bash
+cd frontend && npm run dev
+```
+
+Ошибка `ECONNREFUSED 127.0.0.1:8001` = **API не запущен**. Проверка: `curl http://127.0.0.1:8001/healthz`.
+
+Vite проксирует `/api` → `http://127.0.0.1:8001`. Одной БД (`survey-db`) недостаточно — нужен процесс API.
 
 Откройте браузер на http://localhost:5173/ и используйте `/admin/surveys` для создания анкеты, `/s/<survey_id>` для прохождения.
 
