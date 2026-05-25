@@ -18,7 +18,13 @@ services:
   survey-api:
     build: ./backend
     env_file:
-      - ./backend/.env
+      - path: ./backend/.env
+        required: false
+    environment:
+      # Host backend/.env uses localhost:5433 for migrate.sh / run_api.sh on the machine.
+      # Inside this container localhost is not PostgreSQL — always use the compose service name.
+      DATABASE_URL: postgresql+asyncpg://survey:survey@survey-db:5432/survey_db
+      ALEMBIC_SKIP_HOST_REWRITE: "1"
     # Expose API on the host so `npm run dev` (Vite) can proxy /api → localhost:8001.
     # The survey-frontend nginx still talks to this service on the Docker network.
     ports:

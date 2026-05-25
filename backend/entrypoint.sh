@@ -16,9 +16,20 @@ until pg_isready -h "$PGHOST" -p "$PGPORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB"
 done
 
 echo "PostgreSQL is ready, starting API"
+
+# backend/.env on the host uses localhost:5433 for migrate.sh — inside Docker that is wrong.
+case "${DATABASE_URL:-}" in
+  *localhost*|*127.0.0.1*)
+    echo "Using survey-db:5432 inside container (host .env had localhost)"
+    export DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${PGHOST}:${PGPORT}/${POSTGRES_DB}"
+    ;;
+esac
+export ALEMBIC_SKIP_HOST_REWRITE=1
+
+echo "DATABASE_URL host for API/migrations: $(echo "$DATABASE_URL" | sed -E 's#(://)[^@]+@#\1***@#')"
+
 echo "Applying database migrations (alembic upgrade head)"
 export PYTHONPATH=/app:$PYTHONPATH
-export ALEMBIC_SKIP_HOST_REWRITE=1
 alembic -c /app/alembic.ini upgrade head
 
 echo "Starting API"
