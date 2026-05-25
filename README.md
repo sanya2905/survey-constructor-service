@@ -8,6 +8,26 @@ Backend:
 docker compose up --build
 ```
 
+Миграции БД (локально, без Docker):
+
+```bash
+cd backend
+cp .env.example .env   # при первом запуске, поправьте DATABASE_URL
+./migrate.sh
+```
+
+Скрипт ставит зависимости из `requirements.txt` и запускает `python -m alembic upgrade head`.
+**Не вызывайте глобальный `alembic`** из Codespace — у него нет пакетов проекта (`pydantic_settings` и др.).
+
+Вручную (эквивалент):
+
+```bash
+cd backend
+pip install -r requirements.txt
+export PYTHONPATH="$(pwd)"
+python -m alembic upgrade head
+```
+
 После запуска проверяйте:
 
 - http://localhost:8001/healthz
