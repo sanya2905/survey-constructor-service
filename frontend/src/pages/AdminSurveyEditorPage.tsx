@@ -6,6 +6,7 @@ import {
   Button,
   Checkbox,
   CircularProgress,
+  Collapse,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -48,6 +49,7 @@ import { copyTextToClipboard, getPublicSurveyUrl } from "../publicSurveyLink";
 import VersionHistoryPanel from "../components/VersionHistoryPanel";
 import ResizableSplitPane from "../components/ResizableSplitPane";
 import CreatorViewport from "../components/CreatorViewport";
+import { useEditorChrome } from "../EditorChromeContext";
 
 const VERSION_PANEL_STORAGE = "survey-editor-version-panel";
 
@@ -199,25 +201,9 @@ export default function AdminSurveyEditorPage() {
   }, [creator]);
 
   const { mode: themeMode } = useThemeMode();
+  const { hidden: editorChromeHidden } = useEditorChrome();
 
   const canEdit = currentUser?.role === "admin" || currentUser?.role === "researcher";
-
-  async function handleSaveSchedule() {
-    if (!survey?.id) return;
-    setErr(null);
-    setInfo(null);
-    try {
-      const updated = await updateSurvey(survey.id as string, {
-        start_date: datetimeLocalToIso(startDate),
-        end_date: datetimeLocalToIso(endDate),
-      });
-      setSurvey(updated);
-      setVersionRefreshKey((k) => k + 1);
-      setInfo("Сроки проведения сохранены");
-    } catch (e: unknown) {
-      setErr(errorMessage(e));
-    }
-  }
 
   async function handleSave() {
     setErr(null);
@@ -248,6 +234,8 @@ export default function AdminSurveyEditorPage() {
     setInfo(null);
     try {
       const payload: Partial<Survey> = {
+        start_date: datetimeLocalToIso(startDate),
+        end_date: datetimeLocalToIso(endDate),
         starts_at: datetimeLocalToIso(startsAt),
         ends_at: datetimeLocalToIso(endsAt),
         max_responses: maxResponses ? Number(maxResponses) : null,
@@ -315,6 +303,14 @@ export default function AdminSurveyEditorPage() {
 
   return (
     <Stack spacing={0} sx={{ height: "100%", minHeight: 0 }}>
+      <Collapse in={!editorChromeHidden} timeout={250} sx={{ flexShrink: 0 }}>
+        <Box
+          sx={{
+            borderBottom: "1px solid",
+            borderColor: "divider",
+            bgcolor: "background.paper",
+          }}
+        >
       <Box
         sx={{
           display: "flex",
@@ -323,9 +319,6 @@ export default function AdminSurveyEditorPage() {
           justifyContent: "space-between",
           px: 2,
           py: 1,
-          borderBottom: "1px solid",
-          borderColor: "divider",
-          bgcolor: "background.paper",
           gap: 1,
         }}
       >
@@ -395,7 +388,7 @@ export default function AdminSurveyEditorPage() {
             </Tooltip>
           )}
 
-          <Tooltip title="Настройки проведения (сроки, лимиты, анонимность)">
+          <Tooltip title="Настройки (сроки приёма, проведение, лимиты)">
             <IconButton size="small" onClick={() => setSettingsOpen(true)} sx={{ color: "text.secondary" }}>
               <SettingsIcon fontSize="small" />
             </IconButton>
@@ -439,7 +432,7 @@ export default function AdminSurveyEditorPage() {
       </Box>
 
       {(err || info) && (
-        <Box sx={{ px: 2, pt: 1 }}>
+        <Box sx={{ px: 2, pb: 1 }}>
           {err && (
             <Alert severity="error" onClose={() => setErr(null)}>
               {err}
@@ -452,40 +445,10 @@ export default function AdminSurveyEditorPage() {
           )}
         </Box>
       )}
+        </Box>
+      </Collapse>
 
-      <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", px: 2, py: 0.5, flexWrap: "wrap", flexShrink: 0 }}>
-        <TextField
-          label="Начало приёма ответов"
-          type="datetime-local"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          size="small"
-          slotProps={{ inputLabel: { shrink: true } }}
-          disabled={!canEdit}
-          sx={{ minWidth: 280 }}
-        />
-        <TextField
-          label="Окончание приёма ответов"
-          type="datetime-local"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          size="small"
-          slotProps={{ inputLabel: { shrink: true } }}
-          disabled={!canEdit}
-          sx={{ minWidth: 280 }}
-        />
-        <Button variant="outlined" size="small" onClick={() => void handleSaveSchedule()} disabled={!survey?.id || !canEdit}>
-          Сохранить сроки
-        </Button>
-        {(survey?.start_date || survey?.end_date) && (
-          <Typography variant="body2" color="text.secondary">
-            {survey?.start_date && <>С {new Date(survey.start_date).toLocaleString("ru-RU")}</>}
-            {survey?.start_date && survey?.end_date && <> — </>}
-            {survey?.end_date && <>по {new Date(survey.end_date).toLocaleString("ru-RU")}</>}
-          </Typography>
-        )}
-      </Stack>
-
+      <Box sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       {survey?.id ? (
         <ResizableSplitPane
           storageKey={VERSION_PANEL_STORAGE}
@@ -528,11 +491,41 @@ export default function AdminSurveyEditorPage() {
           <CreatorViewport creator={creator} themeMode={themeMode} />
         </Box>
       )}
+      </Box>
 
       <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Настройки проведения анкетирования</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
+            <Typography variant="subtitle2" color="text.secondary">
+              Сроки приёма ответов
+            </Typography>
+            <TextField
+              label="Начало приёма ответов"
+              type="datetime-local"
+              size="small"
+              slotProps={{ inputLabel: { shrink: true } }}
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              disabled={!canEdit}
+              helperText="До этого времени ответы не принимаются"
+              fullWidth
+            />
+            <TextField
+              label="Окончание приёма ответов"
+              type="datetime-local"
+              size="small"
+              slotProps={{ inputLabel: { shrink: true } }}
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              disabled={!canEdit}
+              helperText="После этого времени приём ответов закрыт"
+              fullWidth
+            />
+            <Divider />
+            <Typography variant="subtitle2" color="text.secondary">
+              Проведение анкетирования
+            </Typography>
             <TextField
               label="Начало проведения"
               type="datetime-local"
@@ -541,7 +534,7 @@ export default function AdminSurveyEditorPage() {
               value={startsAt}
               onChange={(e) => setStartsAt(e.target.value)}
               disabled={!canEdit}
-              helperText="До этого времени анкета недоступна респондентам (дополнительно к полю «Начало приёма» сверху)"
+              helperText="Дополнительное ограничение доступности для респондентов"
               fullWidth
             />
             <TextField

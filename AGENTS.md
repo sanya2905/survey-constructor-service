@@ -35,6 +35,12 @@ python3 scripts/e2e_public_flow.py --api http://localhost:8001/api/v1
 python3 scripts/e2e_stats_and_export.py --api http://localhost:8001/api/v1
 ```
 
+### Pull requests
+
+- Before opening or updating a PR: `git fetch origin && git rebase origin/main` on the feature branch, resolve conflicts locally, run `cd frontend && npm run build`, then push (`--force-with-lease` after rebase).
+- Leave PRs **mergeable** (GitHub: merge state `CLEAN`) so the user only needs to click **Merge**.
+- Small infra fixes (e.g. `docker-compose.yml`) may land on `main` directly when they unblock dev; feature work stays on `cursor/*-4e66` branches.
+
 ### Gotchas
 
 - The frontend has **no registration UI**. User registration is API-only: `POST /api/v1/auth/register` with `{"username", "password", "email", "role"}`.
