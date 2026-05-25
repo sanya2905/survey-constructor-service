@@ -1,9 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { Box } from "@mui/material";
 import { SurveyCreatorComponent } from "survey-creator-react";
 import type { SurveyCreator } from "survey-creator-react";
 import { applyCreatorThemeToElement } from "../surveyCreatorTheme";
+import { useEditorChrome } from "../EditorChromeContext";
 import "../survey-creator-overrides.css";
+
+const SCROLL_HIDE_THRESHOLD = 48;
 
 type CreatorViewportProps = {
   creator: SurveyCreator;
@@ -11,6 +14,29 @@ type CreatorViewportProps = {
 };
 
 export default function CreatorViewport({ creator, themeMode }: CreatorViewportProps) {
+  const { setHidden } = useEditorChrome();
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const onScrollCapture = useCallback(
+    (e: React.UIEvent) => {
+      const host = scrollRef.current;
+      if (!host) return;
+
+      let maxScroll = host.scrollTop;
+      let node = e.target as HTMLElement | null;
+      while (node && host.contains(node)) {
+        if (node.scrollTop > maxScroll) maxScroll = node.scrollTop;
+        node = node.parentElement;
+      }
+      setHidden(maxScroll > SCROLL_HIDE_THRESHOLD);
+    },
+    [setHidden],
+  );
+
+  useEffect(() => {
+    return () => setHidden(false);
+  }, [setHidden]);
+
   useEffect(() => {
     let cancelled = false;
     let attempts = 0;
@@ -35,8 +61,10 @@ export default function CreatorViewport({ creator, themeMode }: CreatorViewportP
 
   return (
     <Box
+      ref={scrollRef}
       className="survey-creator-viewport-host"
       data-theme={themeMode}
+      onScrollCapture={onScrollCapture}
       sx={{
         flex: 1,
         minHeight: 0,
