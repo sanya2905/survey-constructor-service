@@ -44,7 +44,6 @@ docker compose exec survey-db psql -U survey -d survey_db -c \
 ```
 
 Если таблицы `survey_versions` ещё нет, вместо этого поставьте `0006_add_survey_start_date` и снова `upgrade head`.
-```
 
 Скрипт ставит зависимости из `requirements.txt` и запускает `python -m alembic upgrade head`.
 **Не вызывайте глобальный `alembic`** из Codespace — у него нет пакетов проекта (`pydantic_settings` и др.).
