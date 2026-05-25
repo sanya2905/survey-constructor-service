@@ -24,6 +24,7 @@ cp .env.example .env   # при первом запуске
 ```bash
 rm -f backend/alembic/versions/0003_add_survey_end_date.py
 rm -f backend/alembic/versions/0004_add_survey_start_date.py
+rm -f backend/alembic/versions/0007_add_survey_versions.py   # дубликат 0007
 cd backend && python -m alembic heads   # должен быть один: 0007_survey_versions
 ```
 

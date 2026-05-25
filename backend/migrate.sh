@@ -10,6 +10,7 @@ export PYTHONPATH="${ROOT}:${PYTHONPATH:-}"
 STALE_MIGRATIONS=(
   "alembic/versions/0003_add_survey_end_date.py"
   "alembic/versions/0004_add_survey_start_date.py"
+  "alembic/versions/0007_add_survey_versions.py"
 )
 for stale in "${STALE_MIGRATIONS[@]}"; do
   if [[ -f "$stale" ]]; then

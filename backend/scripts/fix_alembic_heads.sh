@@ -8,6 +8,7 @@ cd "$ROOT"
 STALE=(
   "alembic/versions/0003_add_survey_end_date.py"
   "alembic/versions/0004_add_survey_start_date.py"
+  "alembic/versions/0007_add_survey_versions.py"
 )
 
 removed=0
