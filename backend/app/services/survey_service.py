@@ -9,6 +9,7 @@ from __future__ import annotations
 import uuid
 from collections import defaultdict
 from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import HTTPException
 from sqlalchemy import delete, func, select
@@ -17,6 +18,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.session import SurveySession
 from app.models.survey import Survey
 from app.schemas.survey import SurveyCreate, SurveyUpdate
+from app.services.survey_version_service import SurveyVersionService
+from app.utils.survey_diff import compute_field_changes
 
 
 class SurveyService:
@@ -62,7 +65,7 @@ class SurveyService:
     # Writes
     # ──────────────────────────────────────────────────────────────────────────
 
-    async def create_survey(self, payload: SurveyCreate) -> Survey:
+    async def create_survey(self, payload: SurveyCreate, user: Any = None) -> Survey:
         survey = Survey(
             title=payload.title,
             description=payload.description,
@@ -77,19 +80,62 @@ class SurveyService:
             allow_anonymous=payload.allow_anonymous if payload.allow_anonymous is not None else True,
         )
         self._db.add(survey)
+        await self._db.flush()
+        if user is not None:
+            await SurveyVersionService(self._db).record_created(survey, user)
         await self._db.commit()
         await self._db.refresh(survey)
         return survey
 
-    async def update_survey(self, survey_id: uuid.UUID, payload: SurveyUpdate) -> Survey:
+    async def update_survey(
+        self,
+        survey_id: uuid.UUID,
+        payload: SurveyUpdate,
+        user: Any = None,
+    ) -> Survey:
         survey = await self.get_survey(survey_id)
+        payload_fields: dict[str, Any] = {}
+        if payload.title is not None:
+            payload_fields["title"] = payload.title
+        if payload.description is not None:
+            payload_fields["description"] = payload.description
+        if payload.survey_json is not None:
+            payload_fields["survey_json"] = payload.survey_json
+        if payload.is_published is not None:
+            payload_fields["is_published"] = payload.is_published
+        if "start_date" in payload.model_fields_set:
+            payload_fields["start_date"] = payload.start_date
+        if "end_date" in payload.model_fields_set:
+            payload_fields["end_date"] = payload.end_date
+        if "starts_at" in payload.model_fields_set:
+            payload_fields["starts_at"] = payload.starts_at
+        if "ends_at" in payload.model_fields_set:
+            payload_fields["ends_at"] = payload.ends_at
+        if "max_responses" in payload.model_fields_set:
+            payload_fields["max_responses"] = payload.max_responses
+        if "allow_anonymous" in payload.model_fields_set:
+            payload_fields["allow_anonymous"] = payload.allow_anonymous
+
+        changes = compute_field_changes(
+            title=survey.title,
+            description=survey.description,
+            survey_json=survey.survey_json or {},
+            is_published=survey.is_published,
+            start_date=survey.start_date,
+            end_date=survey.end_date,
+            starts_at=survey.starts_at,
+            ends_at=survey.ends_at,
+            max_responses=survey.max_responses,
+            allow_anonymous=survey.allow_anonymous,
+            payload=payload_fields,
+        )
+
         if payload.title is not None:
             survey.title = payload.title
         if payload.description is not None:
             survey.description = payload.description
         if payload.survey_json is not None:
             survey.survey_json = payload.survey_json
-            survey.version += 1
         if payload.is_published is not None:
             survey.is_published = payload.is_published
         if "start_date" in payload.model_fields_set:
@@ -104,15 +150,20 @@ class SurveyService:
             survey.max_responses = payload.max_responses
         if "allow_anonymous" in payload.model_fields_set:
             survey.allow_anonymous = payload.allow_anonymous
+
+        if user is not None and changes:
+            await SurveyVersionService(self._db).record_update_after_apply(survey, changes, user)
         await self._db.commit()
         await self._db.refresh(survey)
         return survey
 
-    async def publish_survey(self, survey_id: uuid.UUID) -> Survey:
+    async def publish_survey(self, survey_id: uuid.UUID, user: Any = None) -> Survey:
         survey = await self.get_survey(survey_id)
         survey.is_published = True
         if survey.published_at is None:
             survey.published_at = datetime.now(timezone.utc)
+        if user is not None:
+            await SurveyVersionService(self._db).record_published(survey, user)
         await self._db.commit()
         await self._db.refresh(survey)
         return survey

@@ -17,9 +17,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_db
 from app.core.auth import has_role, get_current_active_user
 from app.schemas.survey import SurveyCreate, SurveyOut, SurveyUpdate, SurveyStats
+from app.schemas.survey_version import SurveyVersionDetailOut, SurveyVersionOut
 from app.schemas.session import SessionOut
 from app.services.survey_service import SurveyService
 from app.services.session_service import SessionService
+from app.services.survey_version_service import SurveyVersionService
 
 router = APIRouter(prefix="/surveys")
 
@@ -30,9 +32,9 @@ router = APIRouter(prefix="/surveys")
 async def create_survey(
     payload: SurveyCreate,
     db: AsyncSession = Depends(get_db),
-    _=Depends(has_role("admin")),
+    current_user=Depends(has_role("admin")),
 ):
-    return await SurveyService(db).create_survey(payload)
+    return await SurveyService(db).create_survey(payload, user=current_user)
 
 
 @router.get("", response_model=list[SurveyOut])
@@ -57,18 +59,51 @@ async def update_survey(
     survey_id: uuid.UUID,
     payload: SurveyUpdate,
     db: AsyncSession = Depends(get_db),
-    _=Depends(has_role("admin")),
+    current_user=Depends(has_role("admin")),
 ):
-    return await SurveyService(db).update_survey(survey_id, payload)
+    return await SurveyService(db).update_survey(survey_id, payload, user=current_user)
 
 
 @router.post("/{survey_id}/publish", response_model=SurveyOut)
 async def publish_survey(
     survey_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(has_role("admin")),
+    current_user=Depends(has_role("admin")),
 ):
-    return await SurveyService(db).publish_survey(survey_id)
+    return await SurveyService(db).publish_survey(survey_id, user=current_user)
+
+
+# ── Version history ───────────────────────────────────────────────────────────
+
+@router.get("/{survey_id}/versions", response_model=list[SurveyVersionOut])
+async def list_survey_versions(
+    survey_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_active_user),
+):
+    await SurveyService(db).get_survey(survey_id)
+    return await SurveyVersionService(db).list_versions(survey_id)
+
+
+@router.get("/{survey_id}/versions/{version_id}", response_model=SurveyVersionDetailOut)
+async def get_survey_version(
+    survey_id: uuid.UUID,
+    version_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_active_user),
+):
+    return await SurveyVersionService(db).get_version(survey_id, version_id)
+
+
+@router.post("/{survey_id}/versions/{version_id}/restore", response_model=SurveyOut)
+async def restore_survey_version(
+    survey_id: uuid.UUID,
+    version_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(has_role("admin")),
+):
+    survey = await SurveyService(db).get_survey(survey_id)
+    return await SurveyVersionService(db).restore_version(survey, version_id, current_user)
 
 
 @router.delete("/{survey_id}", status_code=204)
