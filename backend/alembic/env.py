@@ -1,7 +1,9 @@
 import os
+import socket
 import sys
 from logging.config import fileConfig
 from pathlib import Path
+from urllib.parse import urlparse, urlunparse
 
 from sqlalchemy import create_engine
 from alembic import context
@@ -26,18 +28,41 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
+def _host_resolves(hostname: str) -> bool:
+    try:
+        socket.getaddrinfo(hostname, None)
+        return True
+    except OSError:
+        return False
+
+
 def _rewrite_db_host_for_local_alembic(url: str) -> str:
-    """survey-db resolves only inside docker-compose; on the host use localhost:5433."""
+    """survey-db resolves only on the compose network (not in Codespace shell)."""
     if os.getenv("ALEMBIC_SKIP_HOST_REWRITE") == "1":
-        return url
-    if Path("/.dockerenv").exists():
         return url
     if "survey-db" not in url:
         return url
-    url = url.replace("survey-db", "localhost")
-    if "@localhost:5432/" in url:
-        url = url.replace("@localhost:5432/", "@localhost:5433/")
-    return url
+    if _host_resolves("survey-db"):
+        return url
+
+    parsed = urlparse(url)
+    host = parsed.hostname or ""
+    port = parsed.port or 5432
+    if host != "survey-db":
+        return url
+
+    # docker-compose maps postgres 5432 -> host 5433
+    local_port = 5433 if port == 5432 else port
+    netloc = parsed.netloc.replace(f"survey-db:{port}", f"localhost:{local_port}")
+    if netloc == parsed.netloc:
+        netloc = parsed.netloc.replace("survey-db", f"localhost:{local_port}")
+
+    rewritten = urlunparse(parsed._replace(netloc=netloc))
+    print(
+        f"[alembic] survey-db is not reachable here; using {rewritten.split('@')[-1]}",
+        file=sys.stderr,
+    )
+    return rewritten
 
 
 def _get_sync_url():

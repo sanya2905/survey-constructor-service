@@ -28,9 +28,9 @@ fi
 "$PYTHON" -m pip install -q -r requirements.txt
 
 if [[ -f .env ]] && grep -q 'survey-db' .env 2>/dev/null; then
-  echo "Подсказка: в .env указан survey-db — для миграций с хоста Alembic подключится к localhost:5433."
-  echo "        Запустите БД: docker compose up -d survey-db"
+  echo "Подсказка: survey-db в .env — Alembic подставит localhost:5433, если survey-db недоступен."
 fi
+echo "Убедитесь, что PostgreSQL запущен: docker compose up -d survey-db"
 
 echo "Running: $PYTHON -m alembic upgrade head"
 exec "$PYTHON" -m alembic upgrade head "$@"

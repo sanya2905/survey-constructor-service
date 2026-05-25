@@ -18,6 +18,7 @@ done
 echo "PostgreSQL is ready, starting API"
 echo "Applying database migrations (alembic upgrade head)"
 export PYTHONPATH=/app:$PYTHONPATH
+export ALEMBIC_SKIP_HOST_REWRITE=1
 alembic -c /app/alembic.ini upgrade head
 
 echo "Starting API"
