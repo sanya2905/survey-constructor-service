@@ -59,28 +59,22 @@
 
 ### 3.3. Диаграмма прецедентов
 
-Вертикальная схема на рисунке 3.1: респондент сверху, подсистема внизу. Экспорт PNG: https://mermaid.live.
+На рисунке 3.1 прецеденты в одной колонке, без широких ответвлений. Подпись к рисунку: актор респондент. Экспорт PNG: https://mermaid.live, ширина около 400 px.
 
 ```mermaid
 flowchart TD
-    R[Респондент]
     O[Открыть анкету по ссылке]
     P[Пройти анкету]
     S[Приостановить и продолжить]
     Z[Завершить анкету]
-    T[Подсистема проведения анкетирования]
+    T[Подсистема проведения]
 
-    R --> O
-    R --> P
-    R --> S
-    R --> Z
-    O --> T
-    P --> T
-    S --> T
-    Z --> T
+    O --> P --> S --> Z --> T
 ```
 
 Рисунок 3.1. Диаграмма прецедентов подсистемы проведения
+
+Актор: респондент. Порядок блоков на рисунке только для узкой вёрстки; прецеденты можно выполнять не строго по этой цепочке.
 
 Респондент не проходит авторизацию в АСНИ. Достаточно ссылки /s/{id}. Открытие загружает опубликованную анкету. Прохождение включает ответы, переходы между страницами и autosave. Приостановить можно закрыв вкладку: при возврате в том же браузере сессия подтянется с сервера. Завершение фиксирует ответы и закрывает сессию для редактирования.
 
@@ -88,42 +82,26 @@ flowchart TD
 
 ### 3.4. Диаграмма последовательности (основной сценарий)
 
+На рисунке 3.2 узкая цепочка шагов основного сценария (новая сессия). Ветка восстановления из localStorage в тексте ниже.
+
 ```mermaid
-sequenceDiagram
-    actor R as Респондент
-    participant UI as PublicSurveyRunPage
-    participant API as public API
-    participant DB as PostgreSQL
+flowchart TD
+    A[Респондент: /s/surveyId]
+    B[GET public/surveys/id]
+    C[Проверка publish и сроков]
+    D[Экран старта, respondent_id]
+    E[POST public/surveys/id/sessions]
+    F[Сохранение id в localStorage]
+    G[SurveyJS Runner, autosave PUT]
+    H[POST sessions/id/complete]
+    I[Экран завершения]
 
-    R->>UI: GET /s/surveyId
-    UI->>API: GET /public/surveys/id
-    API->>DB: publish и сроки
-    DB-->>API: survey_json
-    API-->>UI: 200
-
-    alt session id в localStorage
-        UI->>API: GET /public/sessions/sid
-        API-->>UI: answers page progress
-        UI->>UI: running или done
-    else новый респондент
-        R->>UI: respondent_id опционально
-        UI->>API: POST /public/surveys/id/sessions
-        API->>DB: INSERT session
-        API-->>UI: session id
-        UI->>UI: localStorage running
-    end
-
-    loop autosave 700 ms
-        UI->>API: PUT /public/sessions/sid
-    end
-
-    R->>UI: Complete
-    UI->>API: POST /public/sessions/sid/complete
-    API->>DB: is_completed true
-    UI->>UI: done
+    A --> B --> C --> D --> E --> F --> G --> H --> I
 ```
 
 Рисунок 3.2. Последовательность прохождения анкеты
+
+Если в localStorage уже есть id сессии, после шага B выполняется GET public/sessions/id и пропускаются D, E, F (сразу Runner).
 
 Страница PublicSurveyRunPage сначала тянет анкету. Если в localStorage лежит UUID прошлой сессии, подгружается её состояние; иначе показывается экран identify и кнопка начала. После POST sessions Runner получает hooks: при каждом изменении ответа или страницы через 700 мс уходит PUT. Complete отправляет финальный answers_json и переводит UI в done.
 
@@ -131,20 +109,20 @@ sequenceDiagram
 
 ### 3.5. Диаграмма компонентов
 
-На рисунке 3.3 путь запроса респондента сверху вниз: браузер, nginx, API, база.
+На рисунке 3.3 одна колонка: браузер, страница прохождения, nginx, API, таблица сессий. Для листа А4 книжной ориентации. Экспорт PNG: https://mermaid.live, ширина около 350–450 px.
 
 ```mermaid
 flowchart TD
-    B[Браузер респондента]
-    P[PublicSurveyRunPage и SurveyJS Runner]
-    N[nginx survey-frontend порт 80]
-    A[FastAPI public.py и SessionService]
-    D[(PostgreSQL survey_sessions)]
+    B[Браузер]
+    P[PublicSurveyRunPage]
+    R[SurveyJS Runner]
+    N[nginx :80]
+    API[public.py]
+    SS[SessionService]
+    DB[(survey_sessions)]
 
-    B --> P
-    P -->|HTTP /api/v1/public| N
-    N --> A
-    A --> D
+    B --> P --> R
+    P --> N --> API --> SS --> DB
 ```
 
 Рисунок 3.3. Компоненты и размещение подсистемы проведения
