@@ -17,9 +17,31 @@ def _host_resolves(hostname: str) -> bool:
         return False
 
 
+def _running_in_container() -> bool:
+    return os.path.exists("/.dockerenv") or os.getenv("RUNNING_IN_DOCKER") == "1"
+
+
+def rewrite_db_host_for_container(url: str) -> str:
+    """Host .env often uses localhost:5433; inside compose that must be survey-db:5432."""
+    if not _running_in_container():
+        return url
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    if host not in ("localhost", "127.0.0.1"):
+        return url
+    port = parsed.port or 5432
+    if port not in (5432, 5433):
+        return url
+    userinfo = parsed.netloc.split("@")[0] + "@" if "@" in parsed.netloc else ""
+    netloc = f"{userinfo}survey-db:5432"
+    return urlunparse(parsed._replace(netloc=netloc))
+
+
 def rewrite_db_host_for_local(url: str) -> str:
     """survey-db resolves only on the compose network (not in Codespace shell)."""
     if os.getenv("ALEMBIC_SKIP_HOST_REWRITE") == "1":
+        return url
+    if _running_in_container():
         return url
     if "survey-db" not in url:
         return url
@@ -42,6 +64,7 @@ def rewrite_db_host_for_local(url: str) -> str:
 
 def get_sync_migration_url() -> str:
     url = settings.DATABASE_URL
+    url = rewrite_db_host_for_container(url)
     url = rewrite_db_host_for_local(url)
     if "+asyncpg" in url:
         url = url.replace("+asyncpg", "+psycopg2")

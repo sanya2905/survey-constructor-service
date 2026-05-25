@@ -69,7 +69,7 @@ Frontend (dev, Vite на :5173) — **нужны 2 процесса**: API на 
 
 ```bash
 cp backend/.env.example backend/.env   # первый раз
-docker compose up -d survey-db survey-api
+docker compose up -d --build survey-db survey-api
 curl -s http://127.0.0.1:8001/healthz   # должен ответить {"status":"ok",...}
 ```
 
@@ -77,7 +77,7 @@ curl -s http://127.0.0.1:8001/healthz   # должен ответить {"status
 
 ```bash
 docker compose logs --tail=80 survey-api
-docker compose up -d --force-recreate survey-api
+docker compose up -d --build --force-recreate survey-api
 ```
 
 В `backend/.env` для хоста должен быть `localhost:5433`; для контейнера `survey-api` compose сам задаёт `survey-db:5432`.
