@@ -73,6 +73,15 @@ docker compose up -d survey-db survey-api
 curl -s http://127.0.0.1:8001/healthz   # должен ответить {"status":"ok",...}
 ```
 
+Если `curl` к `:8001` не подключается, контейнер API, скорее всего, упал при старте:
+
+```bash
+docker compose logs --tail=80 survey-api
+docker compose up -d --force-recreate survey-api
+```
+
+В `backend/.env` для хоста должен быть `localhost:5433`; для контейнера `survey-api` compose сам задаёт `survey-db:5432`.
+
 Во втором терминале:
 
 ```bash
