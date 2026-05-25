@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import {
@@ -8,18 +8,67 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  IconButton,
   LinearProgress,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from "@mui/icons-material/LightMode";
 import { api, errorMessage } from "../api";
 import type { PublicSurvey, Session } from "../api";
 import { Model, surveyLocalization } from "survey-core";
 import "survey-core/i18n/russian";
 import { Survey as SurveyRunner } from "survey-react-ui";
 import UnnLogo from "../assets/UnnLogo";
+import { useThemeMode } from "../ThemeContext";
+import surveyDefaultDarkTheme from "survey-core/themes/index";
+
+const BRAND_BLUE = "#003399";
+const BRAND_BLUE_LIGHT = "rgba(0, 51, 153, 0.1)";
+const BRAND_BLUE_DIM = "rgba(0, 51, 153, 0.07)";
+
+function getPatchedLightCssVars(): Record<string, string> {
+  const vars = { ...((surveyDefaultDarkTheme as any)?.DefaultLight?.cssVariables || {}) };
+  if (!vars || Object.keys(vars).length === 0) return {};
+  vars["--sjs-primary-backcolor"] = BRAND_BLUE;
+  vars["--sjs-primary-backcolor-light"] = BRAND_BLUE_LIGHT;
+  vars["--sjs-primary-backcolor-dark"] = "#002277";
+  vars["--sjs-primary-forecolor"] = "#FFFFFF";
+  vars["--sjs-primary-forecolor-light"] = "rgba(255,255,255,0.25)";
+  vars["--sjs-secondary-backcolor"] = BRAND_BLUE;
+  vars["--sjs-secondary-backcolor-light"] = BRAND_BLUE_LIGHT;
+  vars["--sjs-secondary-backcolor-semi-light"] = "rgba(0, 51, 153, 0.25)";
+  vars["--sjs-secondary-forecolor"] = "#FFFFFF";
+  vars["--sjs-secondary-forecolor-light"] = "rgba(255,255,255,0.25)";
+  return vars;
+}
+
+function getPatchedDarkCssVars(): Record<string, string> {
+  const vars = { ...((surveyDefaultDarkTheme as any)?.DefaultDark?.cssVariables || {}) };
+  if (!vars) return {};
+  vars["--sjs-primary-backcolor"] = BRAND_BLUE;
+  vars["--sjs-primary-backcolor-light"] = BRAND_BLUE_DIM;
+  vars["--sjs-primary-backcolor-dark"] = "#002277";
+  vars["--sjs-primary-forecolor"] = "#FFFFFF";
+  vars["--sjs-primary-forecolor-light"] = "rgba(255,255,255,0.25)";
+  vars["--sjs-secondary-backcolor"] = BRAND_BLUE;
+  vars["--sjs-secondary-backcolor-light"] = BRAND_BLUE_LIGHT;
+  vars["--sjs-secondary-backcolor-semi-light"] = "rgba(0, 51, 153, 0.25)";
+  vars["--sjs-secondary-forecolor"] = "#FFFFFF";
+  vars["--sjs-secondary-forecolor-light"] = "rgba(255,255,255,0.25)";
+  vars["--sjs-special-yellow"] = BRAND_BLUE;
+  vars["--sjs-special-yellow-light"] = BRAND_BLUE_LIGHT;
+  vars["--sjs-special-yellow-forecolor"] = "#FFFFFF";
+  vars["--sjs-general-forecolor"] = "#FFFFFF";
+  vars["--sjs-general-forecolor-light"] = "rgba(255,255,255,0.7)";
+  vars["--sjs-general-dim-forecolor"] = "#FFFFFF";
+  vars["--sjs-general-dim-forecolor-light"] = "rgba(255,255,255,0.6)";
+  return vars;
+}
 
 surveyLocalization.currentLocale = "ru";
 surveyLocalization.defaultLocale = "ru";
@@ -45,6 +94,7 @@ type NotStartedInfo = {
 export default function PublicSurveyRunPage() {
   const { surveyId } = useParams<{ surveyId: string }>();
   const navigate = useNavigate();
+  const { mode: themeMode, toggleTheme } = useThemeMode();
 
   const [pub, setPub] = useState<PublicSurvey | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -199,6 +249,60 @@ export default function PublicSurveyRunPage() {
   }
 
   loadSurveyRef.current = loadSurvey;
+
+  const applySurveyTheme = useCallback(
+    (mode: "light" | "dark") => {
+      const el = document.querySelector(".sd-root-modern") as HTMLElement | null;
+      if (!el) return;
+
+      const darkVars = getPatchedDarkCssVars();
+      const lightVars = getPatchedLightCssVars();
+
+      if (mode === "dark") {
+        for (const key of Object.keys(lightVars)) {
+          el.style.removeProperty(key);
+        }
+        for (const [key, value] of Object.entries(darkVars)) {
+          el.style.setProperty(key, value);
+        }
+      } else {
+        for (const key of Object.keys(darkVars)) {
+          el.style.removeProperty(key);
+        }
+        for (const [key, value] of Object.entries(lightVars)) {
+          el.style.setProperty(key, value);
+        }
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (stage !== "running" && stage !== "done") return;
+
+    let cancelled = false;
+    const maxAttempts = 30;
+    let attempts = 0;
+
+    function tryApply() {
+      if (cancelled) return;
+      const el = document.querySelector(".sd-root-modern") as HTMLElement | null;
+      if (el) {
+        applySurveyTheme(themeMode);
+        return;
+      }
+      attempts++;
+      if (attempts < maxAttempts) {
+        setTimeout(tryApply, 100);
+      }
+    }
+
+    const timer = setTimeout(tryApply, 50);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [themeMode, stage, applySurveyTheme]);
 
   async function handleStart() {
     if (!surveyId) return;
@@ -440,7 +544,7 @@ export default function PublicSurveyRunPage() {
     <Box sx={{ minHeight: "100svh", bgcolor: "background.default" }}>
       <Box
         sx={{
-          bgcolor: "white",
+          bgcolor: themeMode === "dark" ? "#1E293B" : "white",
           borderBottom: "1px solid",
           borderColor: "divider",
           px: 3,
@@ -462,8 +566,25 @@ export default function PublicSurveyRunPage() {
           >
             <UnnLogo width={18} height={18} />
           </Box>
-          <Typography sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>Анкетирование</Typography>
-          <Typography sx={{ fontSize: 13, color: "text.secondary" }}>· ННГУ им. Лобачевского</Typography>
+          <Typography sx={{ fontSize: 14, fontWeight: 600, color: themeMode === "dark" ? "#FFFFFF" : "text.primary" }}>
+            Анкетирование
+          </Typography>
+          <Typography sx={{ fontSize: 13, color: themeMode === "dark" ? "#CBD5E1" : "text.secondary" }}>
+            · ННГУ им. Лобачевского
+          </Typography>
+
+          <Box sx={{ flexGrow: 1 }} />
+
+          <Tooltip title={themeMode === "light" ? "Тёмная тема" : "Светлая тема"}>
+            <IconButton
+              onClick={toggleTheme}
+              size="small"
+              sx={{ color: themeMode === "dark" ? "#CBD5E1" : "text.secondary" }}
+              aria-label="toggle theme"
+            >
+              {themeMode === "light" ? <DarkModeIcon fontSize="small" /> : <LightModeIcon fontSize="small" />}
+            </IconButton>
+          </Tooltip>
         </Box>
       </Box>
 

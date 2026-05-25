@@ -11,7 +11,6 @@ import BarChartIcon from "@mui/icons-material/BarChart";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import PendingIcon from "@mui/icons-material/Pending";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { getSurveys, createSurvey as apiCreateSurvey, deleteSurvey, getCurrentUser, errorMessage } from "../api";
 import type { Survey } from "../api";
@@ -112,10 +111,10 @@ export default function AdminSurveysListPage() {
   }
 
   const canEdit = currentUser?.role === "admin" || currentUser?.role === "researcher";
+  const canViewStats = canEdit;
 
   const totalSurveys = surveys.length;
   const activeSurveys = surveys.filter((s) => conductingStatus(s).color === "success").length;
-  const draftSurveys = surveys.filter((s) => !s.is_published).length;
 
   return (
     <Stack spacing={3}>
@@ -139,15 +138,16 @@ export default function AdminSurveysListPage() {
               : "Нет анкет"}
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleCreate}
-          disabled={!canEdit}
-          sx={{ fontWeight: 600, px: 2.5 }}
-        >
-          Создать анкету
-        </Button>
+        {canEdit && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreate}
+            sx={{ fontWeight: 600, px: 2.5 }}
+          >
+            Создать анкету
+          </Button>
+        )}
       </Box>
 
       {err && <Alert severity="error">{err}</Alert>}
@@ -175,12 +175,6 @@ export default function AdminSurveysListPage() {
             label="Активных"
             value={activeSurveys}
             accent="rgba(5,150,105,0.08)"
-          />
-          <MetricCard
-            icon={<PendingIcon sx={{ color: "text.secondary", fontSize: 22 }} />}
-            label="Черновиков"
-            value={draftSurveys}
-            accent="rgba(100,116,139,0.08)"
           />
         </Box>
       )}
@@ -255,16 +249,18 @@ export default function AdminSurveysListPage() {
                     </TableCell>
                     <TableCell align="right">
                       <Box sx={{ display: "flex", flexDirection: "row", gap: 0.5, justifyContent: "flex-end" }}>
-                        <Tooltip title="Редактировать">
-                          <IconButton
-                            size="small"
-                            component={Link}
-                            to={`/admin/surveys/${s.id}`}
-                            sx={{ color: "text.secondary", "&:hover": { color: "primary.main" } }}
-                          >
-                            <EditIcon sx={{ fontSize: 18 }} />
-                          </IconButton>
-                        </Tooltip>
+                        {canEdit && (
+                          <Tooltip title="Редактировать">
+                            <IconButton
+                              size="small"
+                              component={Link}
+                              to={`/admin/surveys/${s.id}`}
+                              sx={{ color: "text.secondary", "&:hover": { color: "primary.main" } }}
+                            >
+                              <EditIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                         {s.is_published && s.id && (
                           <>
                             <Tooltip title="Скопировать ссылку для респондентов">
@@ -290,7 +286,7 @@ export default function AdminSurveysListPage() {
                             </Tooltip>
                           </>
                         )}
-                        {s.is_published && (
+                        {s.is_published && canViewStats && (
                           <Tooltip title="Статистика">
                             <IconButton
                               size="small"
@@ -302,18 +298,19 @@ export default function AdminSurveysListPage() {
                             </IconButton>
                           </Tooltip>
                         )}
-                        <Tooltip title="Удалить">
-                          <span>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDelete(s.id)}
-                              disabled={!canEdit}
-                              sx={{ color: "text.secondary", "&:hover": { color: "error.main" } }}
-                            >
-                              <DeleteIcon sx={{ fontSize: 18 }} />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
+                        {canEdit && (
+                          <Tooltip title="Удалить">
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDelete(s.id)}
+                                sx={{ color: "text.secondary", "&:hover": { color: "error.main" } }}
+                              >
+                                <DeleteIcon sx={{ fontSize: 18 }} />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        )}
                       </Box>
                     </TableCell>
                   </TableRow>

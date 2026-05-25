@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Alert,
@@ -24,13 +24,39 @@ import BarChartIcon from "@mui/icons-material/BarChart";
 import SettingsIcon from "@mui/icons-material/Settings";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutlined";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { editorLocalization } from "survey-creator-core";
+import { editorLocalization, settings } from "survey-creator-core";
 import "survey-creator-core/i18n/russian";
 import { surveyLocalization } from "survey-core";
 import "survey-core/i18n/russian";
 import { SurveyCreatorComponent, SurveyCreator } from "survey-creator-react";
 import "survey-core/survey-core.css";
 import "survey-creator-core/survey-creator-core.css";
+import { useThemeMode } from "../ThemeContext";
+import creatorThemes from "survey-creator-core/themes/index";
+
+const CREATOR_BRAND = "#003399";
+
+function getCreatorPatchedVars(): Record<string, string> {
+  const vars = { ...((creatorThemes as any)?.DefaultDark?.cssVariables || {}) };
+  vars["--sjs2-color-project-brand-600"] = CREATOR_BRAND;
+  vars["--sjs2-color-project-accent-600"] = CREATOR_BRAND;
+  return vars;
+}
+
+function getCreatorBrandOnlyVars(): Record<string, string> {
+  return {
+    "--sjs2-color-project-brand-600": CREATOR_BRAND,
+    "--sjs2-color-project-accent-600": CREATOR_BRAND,
+    "--sjs2-color-project-brand-400": "hsl(from " + CREATOR_BRAND + " h s calc(l * 1.1))",
+    "--sjs2-color-project-brand-700": "lch(from " + CREATOR_BRAND + " calc(l * 0.85) c h)",
+    "--sjs2-color-project-accent-400": "hsl(from " + CREATOR_BRAND + " h s calc(l * 1.1))",
+    "--sjs2-color-project-accent-700": "lch(from " + CREATOR_BRAND + " calc(l * 0.85) c h)",
+    "--sjs2-color-bg-brand-secondary": "rgba(from " + CREATOR_BRAND + " r g b / var(--sjs2-opacity-x010))",
+    "--sjs2-color-bg-brand-tertiary": "rgba(from " + CREATOR_BRAND + " r g b / var(--sjs2-opacity-x000))",
+    "--sjs2-color-bg-brand-secondary-dim": "rgba(from " + CREATOR_BRAND + " r g b / var(--sjs2-opacity-x015))",
+    "--sjs2-color-bg-brand-tertiary-dim": "rgba(from " + CREATOR_BRAND + " r g b / var(--sjs2-opacity-x010))",
+  };
+}
 import {
   getSurvey,
   createSurvey,
@@ -43,8 +69,16 @@ import {
 import type { Survey, User } from "../api";
 import { datetimeLocalToIso, isoToDatetimeLocalValue } from "../datetimeLocal";
 import { copyTextToClipboard, getPublicSurveyUrl } from "../publicSurveyLink";
+import VersionHistoryPanel from "../components/VersionHistoryPanel";
 
 editorLocalization.currentLocale = "ru";
+
+settings.toolbox.defaultJSON.radiogroup = {};
+settings.toolbox.defaultJSON.checkbox = {};
+settings.toolbox.defaultJSON.dropdown = {};
+settings.toolbox.defaultJSON.tagbox = {};
+settings.toolbox.defaultJSON.ranking = {};
+
 surveyLocalization.currentLocale = "ru";
 surveyLocalization.defaultLocale = "ru";
 
@@ -81,6 +115,12 @@ export default function AdminSurveyEditorPage() {
       autoSaveEnabled: true,
       autoSaveDelay: 1000,
       locale: "ru",
+    });
+    c.onCollectionItemAllowOperations.add((_sender, options) => {
+      if (options.propertyName === "choices") {
+        options.allowDelete = true;
+        options.allowEdit = true;
+      }
     });
     c.JSON = { title: "Новая анкета", pages: [] };
     return c;
@@ -168,6 +208,60 @@ export default function AdminSurveyEditorPage() {
     }
     void fetchUser();
   }, [creator]);
+
+  const { mode: themeMode } = useThemeMode();
+
+  const applyCreatorTheme = useCallback(
+    (mode: "light" | "dark") => {
+      const container = document.querySelector(".svc-creator") as HTMLElement | null;
+      if (!container) return;
+
+      const darkVars = getCreatorPatchedVars();
+      const brandVars = getCreatorBrandOnlyVars();
+
+      if (mode === "dark") {
+        for (const [key, value] of Object.entries(brandVars)) {
+          container.style.setProperty(key, value);
+        }
+        for (const [key, value] of Object.entries(darkVars)) {
+          container.style.setProperty(key, value);
+        }
+      } else {
+        for (const key of Object.keys(darkVars)) {
+          container.style.removeProperty(key);
+        }
+        for (const [key, value] of Object.entries(brandVars)) {
+          container.style.setProperty(key, value);
+        }
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const maxAttempts = 20;
+    let attempts = 0;
+
+    function tryApply() {
+      if (cancelled) return;
+      const container = document.querySelector(".svc-creator") as HTMLElement | null;
+      if (container) {
+        applyCreatorTheme(themeMode);
+        return;
+      }
+      attempts++;
+      if (attempts < maxAttempts) {
+        setTimeout(tryApply, 100);
+      }
+    }
+
+    const timer = setTimeout(tryApply, 100);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [themeMode, applyCreatorTheme]);
 
   const canEdit = currentUser?.role === "admin" || currentUser?.role === "researcher";
 
@@ -340,6 +434,15 @@ export default function AdminSurveyEditorPage() {
               <SettingsIcon fontSize="small" />
             </IconButton>
           </Tooltip>
+
+          {survey?.id && (
+            <VersionHistoryPanel
+              surveyId={survey.id}
+              currentVersion={survey.version ?? 1}
+              onRestore={() => window.location.reload()}
+              canEdit={canEdit}
+            />
+          )}
 
           <Tooltip title="Справка: динамическая анкета">
             <IconButton size="small" onClick={() => setHelpOpen(true)} sx={{ color: "text.secondary" }}>

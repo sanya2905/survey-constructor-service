@@ -115,6 +115,20 @@ export type Survey = {
    allow_anonymous?: boolean;
 };
 
+export type SurveyVersion = {
+   id: string;
+   survey_id: string;
+   version_number: number;
+   edited_by_name: string | null;
+   change_summary: string | null;
+   changes: Record<string, unknown> | null;
+   created_at: string | null;
+};
+
+export type SurveyVersionDetail = SurveyVersion & {
+   survey_json_snapshot: Record<string, unknown> | null;
+};
+
 export type SurveyStats = {
    survey_id: string;
    total_sessions: number;
@@ -206,5 +220,17 @@ export function getSurveyStats(id: string) {
 }
 
 export function getSurveySessions(id: string) {
-  return api.get<Session[]>(`/surveys/${id}/sessions`).then(res => res.data);
+   return api.get<Session[]>(`/surveys/${id}/sessions`).then(res => res.data);
+}
+
+export function getSurveyVersions(id: string) {
+   return api.get<SurveyVersion[]>(`/surveys/${id}/versions`).then(res => res.data);
+}
+
+export function getSurveyVersion(id: string, versionId: string) {
+   return api.get<SurveyVersionDetail>(`/surveys/${id}/versions/${versionId}`).then(res => res.data);
+}
+
+export function restoreSurveyVersion(id: string, versionId: string) {
+   return api.post<Survey>(`/surveys/${id}/versions/${versionId}/restore`).then(res => res.data);
 }

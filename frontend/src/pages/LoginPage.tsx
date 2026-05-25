@@ -1,33 +1,20 @@
 import { useState, type ChangeEvent } from "react";
-import { useNavigate } from "react-router-dom";
 import {
-  Box, Button, Card, CardContent, Divider,
+  Box, Button, Card, CardContent,
   FormControl, IconButton, InputAdornment, InputLabel,
-  OutlinedInput, Stack, TextField, ToggleButton,
-  ToggleButtonGroup, Typography,
+  OutlinedInput, Stack, TextField, Typography,
 } from "@mui/material";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
-import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
-import ScienceIcon from "@mui/icons-material/Science";
-import SchoolIcon from "@mui/icons-material/School";
 import { errorMessage, login, setAuthToken, getCurrentUser } from "../api";
 import UnnLogo from "../assets/UnnLogo";
 
-const ROLES = [
-  { value: "admin", label: "Администратор", icon: <AdminPanelSettingsIcon sx={{ fontSize: 16 }} /> },
-  { value: "researcher", label: "Исследователь", icon: <ScienceIcon sx={{ fontSize: 16 }} /> },
-  { value: "student", label: "Студент", icon: <SchoolIcon sx={{ fontSize: 16 }} /> },
-] as const;
-
-export default function LoginPage({ onLogin }: { onLogin?: (role: string) => void }) {
-  const [mode, setMode] = useState<"admin" | "researcher" | "student">("admin");
+export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const nav = useNavigate();
 
   async function handleLogin() {
     setErr(null);
@@ -40,14 +27,8 @@ export default function LoginPage({ onLogin }: { onLogin?: (role: string) => voi
         setErr("Не удалось получить данные пользователя");
         return;
       }
-      if (u.role !== mode) {
-        setErr("Учётные данные не соответствуют выбранной роли");
-        setAuthToken(undefined);
-        return;
-      }
       localStorage.setItem("auth_role", u.role);
-      onLogin?.(u.role);
-      nav("/admin/surveys");
+      window.location.href = "/admin/surveys";
     } catch (e: unknown) {
       setErr(errorMessage(e));
     } finally {
@@ -71,7 +52,6 @@ export default function LoginPage({ onLogin }: { onLogin?: (role: string) => voi
       }}
     >
       <Box sx={{ width: "100%", maxWidth: 440 }}>
-        {/* Header branding */}
         <Box
           sx={{
             display: "flex",
@@ -105,48 +85,14 @@ export default function LoginPage({ onLogin }: { onLogin?: (role: string) => voi
           </Box>
         </Box>
 
-        {/* Login card */}
         <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
           <CardContent sx={{ p: 3 }}>
             <Typography variant="h6" sx={{ mb: 0.5, fontWeight: 600 }}>
               Вход в систему
             </Typography>
             <Typography variant="body2" sx={{ mb: 3 }}>
-              Выберите роль и введите данные
+              Введите логин и пароль
             </Typography>
-
-            {/* Role selector */}
-            <ToggleButtonGroup
-              value={mode}
-              exclusive
-              onChange={(_, v) => v && setMode(v)}
-              aria-label="Роль"
-              fullWidth
-              sx={{ mb: 3 }}
-            >
-              {ROLES.map((r) => (
-                <ToggleButton
-                  key={r.value}
-                  value={r.value}
-                  sx={{
-                    fontSize: 13,
-                    py: 1,
-                    gap: 0.75,
-                    "&.Mui-selected": {
-                      bgcolor: "rgba(0,51,153,0.1)",
-                      color: "primary.dark",
-                      borderColor: "primary.main",
-                      "&:hover": { bgcolor: "rgba(0,51,153,0.15)" },
-                    },
-                  }}
-                >
-                  {r.icon}
-                  {r.label}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-
-            <Divider sx={{ mb: 3 }} />
 
             <Stack spacing={2}>
               <TextField

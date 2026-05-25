@@ -73,6 +73,8 @@ export default function App() {
   const isLoginPage = location.pathname === "/login";
   const showNav = !isPublicPage && !isLoginPage;
 
+  const isAdminOrResearcher = authRole === "admin" || authRole === "researcher";
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100svh", bgcolor: "background.default" }}>
       {/* ── Top Navigation Bar ── */}
@@ -108,18 +110,18 @@ export default function App() {
                 <UnnLogo width={22} height={22} />
               </Box>
               <Box sx={{ lineHeight: 1 }}>
-                <Typography
+                 <Typography
                   sx={{
                     fontSize: 15,
                     fontWeight: 700,
-                    color: "text.primary",
+                    color: mode === "dark" ? "#FFFFFF" : "text.primary",
                     letterSpacing: "-0.01em",
                     lineHeight: 1.2,
                   }}
                 >
                   Анкетирование
                 </Typography>
-                <Typography sx={{ fontSize: 11, color: "text.secondary", lineHeight: 1.2 }}>
+                <Typography sx={{ fontSize: 11, color: mode === "dark" ? "#CBD5E1" : "text.secondary", lineHeight: 1.2 }}>
                   ННГУ им. Лобачевского
                 </Typography>
               </Box>
@@ -142,12 +144,12 @@ export default function App() {
 
             <Box sx={{ flexGrow: 1 }} />
 
-            {/* Theme toggle */}
+             {/* Theme toggle */}
             <Tooltip title={mode === "light" ? "Тёмная тема" : "Светлая тема"}>
               <IconButton
                 onClick={toggleTheme}
                 size="small"
-                sx={{ color: "text.secondary" }}
+                sx={{ color: mode === "dark" ? "#CBD5E1" : "text.secondary" }}
                 aria-label="toggle theme"
               >
                 {mode === "light" ? <DarkModeIcon fontSize="small" /> : <LightModeIcon fontSize="small" />}
@@ -161,8 +163,8 @@ export default function App() {
                   label={ROLE_LABELS[authRole] ?? authRole}
                   size="small"
                   sx={{
-                    bgcolor: "rgba(0,51,153,0.1)",
-                    color: "primary.dark",
+                    bgcolor: mode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,51,153,0.1)",
+                    color: mode === "dark" ? "#E2E8F0" : "primary.dark",
                     fontWeight: 600,
                     fontSize: 12,
                     height: 26,
@@ -172,7 +174,7 @@ export default function App() {
                   sx={{
                     width: 32,
                     height: 32,
-                    bgcolor: "primary.main",
+                    bgcolor: mode === "dark" ? "#3B82F6" : "primary.main",
                     fontSize: 12,
                     fontWeight: 700,
                   }}
@@ -184,7 +186,7 @@ export default function App() {
                     size="small"
                     variant="text"
                     onClick={handleLogout}
-                    sx={{ color: "text.secondary", minWidth: 0, px: 1 }}
+                    sx={{ color: mode === "dark" ? "#CBD5E1" : "text.secondary", minWidth: 0, px: 1 }}
                     startIcon={<LogoutIcon sx={{ fontSize: 16 }} />}
                   >
                     Выйти
@@ -200,7 +202,7 @@ export default function App() {
       <Box component="main" sx={{ flexGrow: 1, py: isPublicPage || isLoginPage ? 0 : 3 }}>
         <Container maxWidth="lg" sx={{ height: "100%" }}>
           <Routes>
-            <Route path="/login" element={<LoginPage onLogin={(r) => setAuthRole(r)} />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/" element={<Navigate to="/admin/surveys" replace />} />
 
             <Route
@@ -209,11 +211,11 @@ export default function App() {
             />
             <Route
               path="/admin/surveys/:id"
-              element={authRole ? <AdminSurveyEditorPage /> : <Navigate to="/login" replace />}
+              element={isAdminOrResearcher ? <AdminSurveyEditorPage /> : <Navigate to="/admin/surveys" replace />}
             />
             <Route
               path="/admin/surveys/:id/stats"
-              element={authRole ? <SurveyStatsPage /> : <Navigate to="/login" replace />}
+              element={isAdminOrResearcher ? <SurveyStatsPage /> : <Navigate to="/admin/surveys" replace />}
             />
 
             <Route path="/s/:surveyId" element={<PublicSurveyRunPage />} />
@@ -244,22 +246,32 @@ function NavTab({
   active: boolean;
   onClick: () => void;
 }) {
+  const { mode: themeMode } = useThemeMode();
+  const isDark = themeMode === "dark";
+
   return (
     <Button
       onClick={onClick}
       size="small"
       startIcon={icon}
       sx={{
-        color: active ? "primary.main" : "text.secondary",
+        color: active
+          ? (isDark ? "#FFFFFF" : "primary.main")
+          : (isDark ? "#CBD5E1" : "text.secondary"),
         fontWeight: active ? 600 : 400,
         fontSize: 14,
         borderRadius: "8px 8px 0 0",
         px: 1.5,
         py: 0.75,
-        bgcolor: active ? "rgba(0,51,153,0.08)" : "transparent",
-        "&:hover": { bgcolor: "rgba(0,51,153,0.06)", color: "primary.main" },
+        bgcolor: active
+          ? (isDark ? "rgba(255,255,255,0.1)" : "rgba(0,51,153,0.08)")
+          : "transparent",
+        "&:hover": {
+          bgcolor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,51,153,0.06)",
+          color: isDark ? "#FFFFFF" : "primary.main",
+        },
         borderBottom: "2px solid",
-        borderColor: active ? "primary.main" : "transparent",
+        borderColor: active ? (isDark ? "#FFFFFF" : "primary.main") : "transparent",
       }}
     >
       {label}
