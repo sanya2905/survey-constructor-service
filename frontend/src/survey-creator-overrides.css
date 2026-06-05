@@ -136,6 +136,98 @@
   background: #ffffff !important;
 }
 
+/* Preview (Test) tab: fix text color and visibility */
+.svc-creator-tab__content[data-name="test"],
+.svc-tab-test,
+.svc-plugin-tab__content .sv-root-modern {
+  color: #0f172a !important;
+}
+
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test,
+.survey-creator-viewport-host[data-theme="light"] .svc-plugin-tab__content .sv-root-modern,
+.survey-creator-viewport-host[data-theme="light"] .sv-root-modern {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sv-root-modern,
+.survey-creator-viewport-host[data-theme="light"] .svc-plugin-tab__content .sd-root-modern {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.survey-creator-viewport-host[data-theme="dark"] .svc-tab-test,
+.survey-creator-viewport-host[data-theme="dark"] .svc-plugin-tab__content .sv-root-modern,
+.survey-creator-viewport-host[data-theme="dark"] .sv-root-modern {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+.survey-creator-viewport-host[data-theme="dark"] .svc-tab-test .sv-root-modern,
+.survey-creator-viewport-host[data-theme="dark"] .svc-plugin-tab__content .sd-root-modern {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+/* Ensure questions are visible in preview */
+.svc-tab-test .sd-question,
+.svc-plugin-tab__content .sd-question,
+.sv-root-modern .sd-question {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.svc-tab-test .sd-container-modern,
+.svc-plugin-tab__content .sd-container-modern {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Light theme preview - ensure all text is dark */
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-preview,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test,
+.survey-creator-viewport-host[data-theme="light"] .svc-plugin-tab__content {
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+}
+
+.survey-creator-viewport-host[data-theme="light"] .sd-question,
+.survey-creator-viewport-host[data-theme="light"] .sd-question__title,
+.survey-creator-viewport-host[data-theme="light"] .sd-question__content,
+.survey-creator-viewport-host[data-theme="light"] .sd-root-modern,
+.survey-creator-viewport-host[data-theme="light"] .sv-text {
+  color: #0f172a !important;
+  background-color: transparent !important;
+}
+
+.survey-creator-viewport-host[data-theme="light"] .sv-root-modern {
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+}
+
+/* Dark theme preview */
+.survey-creator-viewport-host[data-theme="dark"] .svc-tab-preview,
+.survey-creator-viewport-host[data-theme="dark"] .svc-tab-test,
+.survey-creator-viewport-host[data-theme="dark"] .svc-plugin-tab__content {
+  color: #f1f5f9 !important;
+  background-color: #1e293b !important;
+}
+
+.survey-creator-viewport-host[data-theme="dark"] .sd-question,
+.survey-creator-viewport-host[data-theme="dark"] .sd-question__title,
+.survey-creator-viewport-host[data-theme="dark"] .sd-question__content,
+.survey-creator-viewport-host[data-theme="dark"] .sd-root-modern,
+.survey-creator-viewport-host[data-theme="dark"] .sv-text {
+  color: #f1f5f9 !important;
+  background-color: transparent !important;
+}
+
+.survey-creator-viewport-host[data-theme="dark"] .sv-root-modern {
+  color: #f1f5f9 !important;
+  background-color: #1e293b !important;
+}
+
 .svc-creator--app-light .svc-hovered.svc-page__content {
   box-shadow: 0 0 0 2px rgba(0, 51, 153, 0.22) !important;
 }
@@ -155,4 +247,349 @@
 
 .svc-creator--app-light .svc-survey-element-toolbar__item.svc-survey-element-toolbar__item--active use {
   fill: #003399 !important;
+}
+
+/* Hide license banner footer */
+.sv-root-panel-footer {
+  display: none !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Fix green text color in preview - override SurveyJS variables */
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-preview .sv-root-modern,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sv-root-modern {
+  --sjs-general-text-color: #0f172a !important;
+  --sjs-text-dark-color: #0f172a !important;
+  --sjs-font-main-color: #0f172a !important;
+  color: #0f172a !important;
+}
+
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-preview * ,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test * {
+  --sjs-general-text-color: #0f172a !important;
+  --sjs-text-dark-color: #0f172a !important;
+}
+
+.survey-creator-viewport-host[data-theme="dark"] .svc-tab-preview .sv-root-modern,
+.survey-creator-viewport-host[data-theme="dark"] .svc-tab-test .sv-root-modern {
+  --sjs-general-text-color: #f1f5f9 !important;
+  --sjs-text-dark-color: #f1f5f9 !important;
+  --sjs-font-main-color: #f1f5f9 !important;
+  color: #f1f5f9 !important;
+}
+
+.survey-creator-viewport-host[data-theme="dark"] .svc-tab-preview * ,
+.survey-creator-viewport-host[data-theme="dark"] .svc-tab-test * {
+  --sjs-general-text-color: #f1f5f9 !important;
+  --sjs-text-dark-color: #f1f5f9 !important;
+}
+
+/* Hide developer license banner - multiple selectors for robustness */
+.svc-creator__footer,
+.sv-components__panel-footer,
+.svc-footer,
+.sv-footer,
+[class*="footer"][class*="banner"],
+[class*="license"],
+.sv-panel-footer {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  pointer-events: none !important;
+}
+
+/* Fix scrolling in logic tab - make it properly scrollable */
+.svc-logic-tab__content,
+.svc-plugin-tab__content.sv-logic-tab,
+.svc-tab-logic,
+.svc-tab-logic__content,
+.svc-logic-rule-panel,
+.svc-logic-panel,
+.sv-logic-tab {
+  overflow: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: auto !important;
+}
+
+.survey-creator-viewport-host .svc-plugin-tab__content {
+  overflow: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: auto !important;
+}
+
+.svc-creator__tab-content {
+  overflow: auto !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+/* Fix text color in preview and all tabs - use theme text color */
+.svc-creator--app-light .svc-tab-preview,
+.svc-creator--app-light .svc-plugin-tab__content,
+.svc-creator--app-light .svc-tab-preview .sd-root-modern,
+.svc-creator--app-light .svc-tab-preview .sv-text,
+.svc-creator--app-light .svc-tab-preview .sv-string-editor {
+  color: #0f172a !important;
+}
+
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-preview,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-preview .sd-root-modern,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-preview .sv-text,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-preview .sv-string-editor,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-preview .sv-empty-text {
+  color: #0f172a !important;
+  --sjs-general-text-color: #0f172a;
+  --sjs-text-dark-color: #0f172a;
+}
+
+/* Fix "no questions" message color */
+.survey-creator-viewport-host[data-theme="light"] .sv-text,
+.survey-creator-viewport-host[data-theme="light"] .sv-text--empty,
+.survey-creator-viewport-host[data-theme="light"] .sv-empty-text {
+  color: #0f172a !important;
+}
+
+/* Ensure preview content scrolls properly */
+.survey-creator-viewport-host .svc-tab-preview_content,
+.survey-creator-viewport-host .svc-plugin-tab__content {
+  overflow: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+}
+
+/* Fix dark theme colors for preview */
+.svc-creator--app-dark .svc-tab-preview,
+.svc-creator--app-dark .svc-tab-preview .sd-root-modern,
+.survey-creator-viewport-host[data-theme="dark"] .svc-tab-preview .sv-text {
+  color: #f1f5f9 !important;
+  --sjs-general-text-color: #f1f5f9;
+  --sjs-text-dark-color: #f1f5f9;
+}
+
+/* ────────────────────────────────────────────────────────── */
+/* BANNER HIDING & TEXT COLOR FIXES FOR TEST TAB */
+/* ────────────────────────────────────────────────────────── */
+
+/* Aggressively hide all footer/banner elements */
+body .sv-root-panel-footer,
+body [class*="panel-footer"],
+body [class*="footer-banner"],
+body [class*="license-banner"],
+.svc-creator .sv-root-panel-footer,
+.survey-creator-viewport-host .sv-root-panel-footer {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+}
+
+/* Cover banner area with white rectangle if it appears */
+.survey-creator-viewport-host::after {
+  content: "";
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background-color: #ffffff;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.survey-creator-viewport-host[data-theme="dark"]::after {
+  background-color: #0f172a;
+}
+
+/* ────────────────────────────────────────────────────────── */
+/* TEST TAB: Fix text colors to match editor (dark gray) */
+/* ────────────────────────────────────────────────────────── */
+
+/* Light theme: text in test tab should be dark gray like editor */
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test * {
+  --sjs-general-text-color: #334155 !important;
+  --sjs-text-dark-color: #334155 !important;
+  --sjs-font-main-color: #334155 !important;
+  --sjs-primary-background-500: #334155 !important;
+  --sjs-primary-background-400: #334155 !important;
+  --sjs-primary-background-10: rgba(51, 65, 85, 0.1) !important;
+  --sjs-primary-background-25: rgba(51, 65, 85, 0.25) !important;
+  --sjs-secondary-background-500: #334155 !important;
+  --sjs-secondary-background-400: #334155 !important;
+  --sjs-secondary-background-10: rgba(51, 65, 85, 0.1) !important;
+  --sjs-secondary-background-25: rgba(51, 65, 85, 0.25) !important;
+  --sjs-primary-text-color: #334155 !important;
+  --sjs-secondary-text-color: #334155 !important;
+  --sjs-accent-color: #334155 !important;
+  --sjs-special-background: #334155 !important;
+  --sjs2-color-project-brand-600: #334155 !important;
+  --sjs2-color-project-brand-400: #334155 !important;
+  --sjs2-color-project-brand-700: #334155 !important;
+  --sjs2-palette-green-600: #334155 !important;
+  --sjs2-palette-green-400: #334155 !important;
+  --sjs2-palette-green-700: #334155 !important;
+}
+
+/* Fix input underlines/focus states to dark gray in light theme */
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sv-input,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sd-input,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test input[type="text"],
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test input[type="number"],
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test textarea {
+  border-color: #334155 !important;
+  --sjs-border-default: #334155 !important;
+  --sjs-border-light: #334155 !important;
+  color: #334155 !important;
+}
+
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sv-input:focus,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test input:focus,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test textarea:focus,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sv-input.sv-input--focused {
+  border-color: #334155 !important;
+  --sjs-border-default: #334155 !important;
+  box-shadow: 0 0 0 2px rgba(51, 65, 85, 0.2) !important;
+  background-color: #ffffff !important;
+}
+
+/* Fix active states for buttons, radio, checkboxes to dark gray */
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sv-button,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test button,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sv-action-bar-item {
+  border-color: #334155 !important;
+  color: #334155 !important;
+  background-color: #ffffff !important;
+}
+
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sv-button:hover,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test button:hover,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sv-action-bar-item:hover {
+  background-color: rgba(51, 65, 85, 0.1) !important;
+  border-color: #334155 !important;
+  color: #334155 !important;
+}
+
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sv-button:active,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test button:active {
+  background-color: rgba(51, 65, 85, 0.15) !important;
+  border-color: #334155 !important;
+}
+
+/* Fix radio and checkbox SVG colors */
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sv-radio__svg,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sv-checkbox__svg,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test svg[class*="radio"],
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test svg[class*="checkbox"] {
+  stroke: #334155 !important;
+  fill: transparent !important;
+}
+
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sv-radio__svg.checked,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sv-checkbox__svg.checked {
+  stroke: #334155 !important;
+  fill: #334155 !important;
+}
+
+/* Tab/focus underlines in light theme test tab */
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sv-question--selected,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sv-q-focus,
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sd-question__content--selected {
+  border-bottom-color: #334155 !important;
+  border-color: #334155 !important;
+}
+
+/* Override all green colors in test tab for light theme */
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sv-progress {
+  background-color: #cbd5e1 !important;
+}
+
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test .sv-progress__bar {
+  background-color: #334155 !important;
+}
+
+/* Fix link colors */
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test a {
+  color: #334155 !important;
+}
+
+.survey-creator-viewport-host[data-theme="light"] .svc-tab-test a:hover {
+  color: #1e293b !important;
+}
+
+/* Dark theme: text in test tab */
+.survey-creator-viewport-host[data-theme="dark"] .svc-tab-test,
+.survey-creator-viewport-host[data-theme="dark"] .svc-tab-test * {
+  --sjs-general-text-color: #cbd5e1 !important;
+  --sjs-text-dark-color: #cbd5e1 !important;
+  --sjs-font-main-color: #cbd5e1 !important;
+}
+
+/* Fix input underlines in dark theme */
+.survey-creator-viewport-host[data-theme="dark"] .svc-tab-test .sv-input,
+.survey-creator-viewport-host[data-theme="dark"] .svc-tab-test input[type="text"],
+.survey-creator-viewport-host[data-theme="dark"] .svc-tab-test textarea {
+  border-color: #475569 !important;
+  --sjs-border-default: #475569 !important;
+}
+
+.survey-creator-viewport-host[data-theme="dark"] .svc-tab-test .sv-input:focus,
+.survey-creator-viewport-host[data-theme="dark"] .svc-tab-test input:focus,
+.survey-creator-viewport-host[data-theme="dark"] .svc-tab-test textarea:focus {
+  border-color: #cbd5e1 !important;
+  --sjs-border-default: #cbd5e1 !important;
+  box-shadow: 0 0 0 2px rgba(203, 213, 225, 0.1) !important;
+}
+
+/* ────────────────────────────────────────────────────────── */
+/* QUESTIONS DISPLAY FIX */
+/* ────────────────────────────────────────────────────────── */
+
+/* Ensure questions container shows content */
+.svc-tab-test .sv-root-modern,
+.svc-tab-test .sd-container-modern,
+.survey-creator-viewport-host .svc-tab-test .sd-root-modern {
+  display: flex !important;
+  flex-direction: column !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Show all questions */
+.svc-tab-test .sd-question,
+.svc-tab-test .sv-question,
+.survey-creator-viewport-host .svc-tab-test .sd-question,
+.survey-creator-viewport-host .svc-tab-test .sv-question {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+/* Show question titles */
+.svc-tab-test .sd-question__title,
+.svc-tab-test .sv-question__title,
+.survey-creator-viewport-host .svc-tab-test .sd-question__title {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Show question content */
+.svc-tab-test .sd-question__content,
+.svc-tab-test .sv-question__content,
+.survey-creator-viewport-host .svc-tab-test .sd-question__content {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }

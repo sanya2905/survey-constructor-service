@@ -59,6 +59,80 @@ export default function CreatorViewport({ creator, themeMode }: CreatorViewportP
     };
   }, [themeMode]);
 
+  // Hide license banner and fix layout issues
+  useEffect(() => {
+    let cancelled = false;
+    let interval: number;
+
+    function hideBannerAndFixLayout() {
+      if (cancelled) return;
+
+      // Hide banner footer
+      const bannerSelectors = [
+        ".sv-root-panel-footer",
+        "[class*='panel-footer']",
+        "[class*='footer-banner']",
+        "[class*='license-banner']",
+        ".svc-creator__footer",
+        ".sv-components__panel-footer",
+        ".svc-footer",
+        ".sv-footer",
+        ".sv-panel-footer",
+      ];
+
+      bannerSelectors.forEach((selector) => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach((el) => {
+          const htmlEl = el as HTMLElement;
+          htmlEl.style.display = "none";
+          htmlEl.style.visibility = "hidden";
+          htmlEl.style.height = "0";
+          htmlEl.style.overflow = "hidden";
+          htmlEl.style.padding = "0";
+          htmlEl.style.margin = "0";
+          htmlEl.style.border = "none";
+        });
+      });
+
+      // Fix overflow in logic tab
+      const logicElements = document.querySelectorAll(".svc-tab-logic, .svc-plugin-tab__content");
+      logicElements.forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.overflow = "auto";
+        htmlEl.style.maxHeight = "none";
+      });
+
+      // Ensure questions are visible in test tab
+      const testTab = document.querySelector(".svc-tab-test");
+      if (testTab) {
+        const questions = testTab.querySelectorAll(".sd-question, .sv-question");
+        questions.forEach((q) => {
+          const htmlEl = q as HTMLElement;
+          htmlEl.style.display = "block";
+          htmlEl.style.visibility = "visible";
+          htmlEl.style.opacity = "1";
+        });
+
+        const container = testTab.querySelector(".sd-container-modern, .sv-root-modern");
+        if (container) {
+          const htmlEl = container as HTMLElement;
+          htmlEl.style.display = "flex";
+          htmlEl.style.flexDirection = "column";
+          htmlEl.style.visibility = "visible";
+          htmlEl.style.opacity = "1";
+        }
+      }
+    }
+
+    hideBannerAndFixLayout();
+    interval = window.setInterval(hideBannerAndFixLayout, 500);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
     <Box
       ref={scrollRef}
