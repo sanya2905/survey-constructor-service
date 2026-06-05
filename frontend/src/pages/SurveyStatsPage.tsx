@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Alert, Box, Button, Card, CardContent, Chip, CircularProgress,
   Divider, LinearProgress, Stack, Table, TableBody, TableCell,
@@ -7,7 +7,7 @@ import {
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import DownloadIcon from "@mui/icons-material/Download";
-import { getSurveyStats, getSurveySessions, getSurvey, errorMessage } from "../api";
+import { getSurveyStats, getSurveySessions, getSurvey, exportSurveyResponses, errorMessage } from "../api";
 import type { SurveyStats, Session, Survey } from "../api";
 
 function formatDate(dateStr?: string | null): string {
@@ -28,6 +28,20 @@ export default function SurveyStatsPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [exporting, setExporting] = useState<"csv" | "json" | null>(null);
+
+  async function handleExport(format: "csv" | "json") {
+    if (!id) return;
+    setExporting(format);
+    setErr(null);
+    try {
+      await exportSurveyResponses(id, format, { includeIncomplete: true });
+    } catch (e: unknown) {
+      setErr(errorMessage(e));
+    } finally {
+      setExporting(null);
+    }
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -211,10 +225,9 @@ export default function SurveyStatsPage() {
             <Button
               size="small"
               variant="outlined"
-              startIcon={<DownloadIcon sx={{ fontSize: 15 }} />}
-              component={Link}
-              to={`/api/v1/surveys/${id}/export?format=csv&include_incomplete=true`}
-              target="_blank"
+              startIcon={exporting === "csv" ? <CircularProgress size={14} /> : <DownloadIcon sx={{ fontSize: 15 }} />}
+              disabled={!!exporting}
+              onClick={() => void handleExport("csv")}
               sx={{ fontSize: 12 }}
             >
               CSV
@@ -222,10 +235,9 @@ export default function SurveyStatsPage() {
             <Button
               size="small"
               variant="outlined"
-              startIcon={<DownloadIcon sx={{ fontSize: 15 }} />}
-              component={Link}
-              to={`/api/v1/surveys/${id}/export?format=json&include_incomplete=true`}
-              target="_blank"
+              startIcon={exporting === "json" ? <CircularProgress size={14} /> : <DownloadIcon sx={{ fontSize: 15 }} />}
+              disabled={!!exporting}
+              onClick={() => void handleExport("json")}
               sx={{ fontSize: 12 }}
             >
               JSON
