@@ -223,6 +223,37 @@ export function getSurveySessions(id: string) {
    return api.get<Session[]>(`/surveys/${id}/sessions`).then(res => res.data);
 }
 
+export type SurveyExportFormat = "csv" | "json";
+
+export async function exportSurveyResponses(
+  id: string,
+  format: SurveyExportFormat,
+  options?: { includeIncomplete?: boolean; anonymize?: boolean },
+): Promise<void> {
+  const params = new URLSearchParams({ format });
+  if (options?.includeIncomplete) params.set("include_incomplete", "true");
+  if (options?.anonymize) params.set("anonymize", "true");
+
+  const response = await api.get(`/surveys/${id}/export?${params.toString()}`, {
+    responseType: "blob",
+  });
+
+  const disposition = response.headers["content-disposition"] as string | undefined;
+  const filenameMatch = disposition?.match(/filename="?([^";\n]+)"?/);
+  const ext = format === "csv" ? "csv" : "json";
+  const filename = filenameMatch?.[1] ?? `survey_${id}_responses.${ext}`;
+
+  const blob = new Blob([response.data], {
+    type: format === "csv" ? "text/csv" : "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 export function getSurveyVersions(id: string) {
    return api.get<SurveyVersion[]>(`/surveys/${id}/versions`).then(res => res.data);
 }

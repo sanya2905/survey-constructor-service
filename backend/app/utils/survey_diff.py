@@ -84,6 +84,23 @@ def compute_field_changes(
     return changes
 
 
+def compute_changes_from_snapshot(snapshot: dict, current: dict) -> dict[str, Any]:
+    """Compare a stored snapshot dict to the current survey state dict."""
+    return compute_field_changes(
+        title=snapshot.get("title") or "",
+        description=snapshot.get("description"),
+        survey_json=snapshot.get("survey_json") or {},
+        is_published=bool(snapshot.get("is_published", False)),
+        start_date=snapshot.get("start_date"),
+        end_date=snapshot.get("end_date"),
+        starts_at=snapshot.get("starts_at"),
+        ends_at=snapshot.get("ends_at"),
+        max_responses=snapshot.get("max_responses"),
+        allow_anonymous=bool(snapshot.get("allow_anonymous", True)),
+        payload=current,
+    )
+
+
 def build_change_summary(changes: dict[str, Any]) -> str:
     if not changes:
         return "Изменение"
@@ -91,7 +108,20 @@ def build_change_summary(changes: dict[str, Any]) -> str:
     if changes.get("action") == "created":
         return "Анкета создана"
     if changes.get("action") == "published":
-        return "Анкета опубликована"
+        content_keys = {k for k in changes if k not in ("action",)}
+        if not content_keys:
+            return "Анкета опубликована"
+        parts = ["Анкета опубликована"]
+        if "survey_json" in changes:
+            sj = changes["survey_json"]
+            if isinstance(sj, dict) and "questions" in sj:
+                q = sj["questions"]
+                parts.append(f"структура: {q.get('old', 0)} → {q.get('new', 0)} вопр.")
+            else:
+                parts.append("изменена структура")
+        if "title" in changes:
+            parts.append("изменено название")
+        return ", ".join(parts)
     if changes.get("action") == "restored":
         from_version = changes.get("from_version")
         if from_version is not None:
