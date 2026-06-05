@@ -14,10 +14,11 @@ This is a **survey constructor service** with three components orchestrated by D
 
 ### Running the stack for development
 
-1. Copy env: `cp backend/.env.example backend/.env` (uses Docker network URL by default, which is correct for `docker compose`).
-2. Start all containers: `docker compose up --build -d`
-3. API health check: `curl http://localhost:8001/healthz` → `{"status":"ok","db":true}`
-4. For frontend development, run Vite dev server: `cd frontend && npm run dev` (serves on `:5173`, proxies `/api` → `localhost:8001`).
+1. Ensure Docker daemon is running (Cloud Agent VMs): `sudo dockerd > /tmp/dockerd.log 2>&1 &` then wait a few seconds. Use `sudo docker compose` if you get permission denied on `/var/run/docker.sock`.
+2. Copy env: `cp backend/.env.example backend/.env` (uses `localhost:5433` for host-side tools; compose overrides `DATABASE_URL` inside `survey-api`).
+3. Start all containers: `sudo docker compose up --build -d`
+4. API health check: `curl http://localhost:8001/healthz` → `{"status":"ok","db":true}`
+5. For frontend development, run Vite dev server in a tmux session: `cd frontend && npm run dev -- --host 0.0.0.0` (serves on `:5173`, proxies `/api` → `localhost:8001`).
 
 ### Linting and type-checking
 
@@ -43,7 +44,7 @@ python3 scripts/e2e_stats_and_export.py --api http://localhost:8001/api/v1
 
 ### Gotchas
 
-- The frontend has **no registration UI**. User registration is API-only: `POST /api/v1/auth/register` with `{"username", "password", "email", "role"}`.
+- The frontend has **no registration UI**. User registration is API-only: `POST /api/v1/auth/register` with `{"username", "password", "email", "role"}`. Survey payloads use the field `survey_json` (not `schema_json`).
 - The backend `.env` `DATABASE_URL` must use `survey-db` as host when running inside Docker Compose (default in `.env.example`). Use `localhost:5433` only when running the backend directly on the host.
 - Docker in Cloud Agent VMs requires `fuse-overlayfs` storage driver and `iptables-legacy`. The dockerd must be started manually (`sudo dockerd &`).
 - The root `package.json` is not the frontend package — the actual frontend is at `frontend/package.json`.
