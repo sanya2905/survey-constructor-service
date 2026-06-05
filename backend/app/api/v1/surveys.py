@@ -219,4 +219,9 @@ async def export_survey(
             headers={"Content-Disposition": f"attachment; filename=survey_{survey_id}_responses.csv"},
         )
 
-    return rows
+    content = json.dumps(rows, ensure_ascii=False, indent=2)
+    return Response(
+        content=content,
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename=survey_{survey_id}_responses.json"},
+    )

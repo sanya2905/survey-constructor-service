@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.survey import Survey
 from app.models.survey_version import SurveyVersion
-from app.utils.survey_diff import build_change_summary, compute_field_changes
+from app.utils.survey_diff import build_change_summary, compute_changes_from_snapshot, compute_field_changes
 
 
 def _editor_name(user: Any) -> str:
@@ -101,11 +101,23 @@ class SurveyVersionService:
         )
 
     async def record_published(self, survey: Survey, user: Any) -> SurveyVersion:
-        if survey.version == 0:
-            survey.version = 1
+        last_res = await self._db.execute(
+            select(SurveyVersion)
+            .where(SurveyVersion.survey_id == survey.id)
+            .order_by(SurveyVersion.version_number.desc(), SurveyVersion.created_at.desc())
+            .limit(1)
+        )
+        last_version = last_res.scalar_one_or_none()
+        current = _snapshot_from_survey(survey)
+        if last_version and last_version.survey_json_snapshot:
+            changes = compute_changes_from_snapshot(last_version.survey_json_snapshot, current)
+        else:
+            changes = {}
+        changes["action"] = "published"
+        survey.version += 1
         return await self._record_version(
             survey,
-            changes={"action": "published"},
+            changes=changes,
             editor_name=_editor_name(user),
             editor_id=_editor_id(user),
             version_number=survey.version,

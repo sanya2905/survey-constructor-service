@@ -90,11 +90,13 @@ def main():
     print("Survey id:", survey_id)
 
     print("Publishing survey...")
-    request_json("POST", API + f"/surveys/{survey_id}/publish", headers=headers)
+    published = request_json("POST", API + f"/surveys/{survey_id}/publish", headers=headers)
+    print("Published version:", published.get("version"))
 
     print("Simulating autosave via update...")
     updated = request_json("PUT", API + f"/surveys/{survey_id}", {"survey_json": {"title": "E2E Survey updated", "pages": []}}, headers=headers)
-    print("Updated version:", updated.get("version"))
+    assert updated.get("version") == published.get("version"), "Autosave must not bump version"
+    print("Updated version (unchanged):", updated.get("version"))
 
     print("Starting public session...")
     sess = request_json("POST", API + f"/public/surveys/{survey_id}/sessions", {"respondent_id": "e2e_respondent"})
