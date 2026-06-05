@@ -164,7 +164,6 @@ export default function AdminSurveyEditorPage() {
           if (surveyRef.current?.id) {
             const updated = await updateSurvey(surveyRef.current.id as string, payload);
             setSurvey(updated);
-            setVersionRefreshKey((k) => k + 1);
           } else {
             const created = await createSurvey(payload);
             navigate(`/admin/surveys/${created.id}`);
@@ -215,7 +214,6 @@ export default function AdminSurveyEditorPage() {
       if (survey?.id) {
         const updated = await updateSurvey(survey.id as string, payload);
         setSurvey(updated);
-        setVersionRefreshKey((k) => k + 1);
         setInfo("Сохранено");
       } else {
         const created = await createSurvey(payload);
@@ -243,7 +241,6 @@ export default function AdminSurveyEditorPage() {
       };
       const updated = await updateSurvey(survey.id as string, payload);
       setSurvey(updated);
-      setVersionRefreshKey((k) => k + 1);
       setInfo("Настройки проведения сохранены");
       setSettingsOpen(false);
     } catch (e: unknown) {
