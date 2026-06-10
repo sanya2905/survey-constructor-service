@@ -98,6 +98,20 @@ def main():
     assert updated.get("version") == published.get("version"), "Autosave must not bump version"
     print("Updated version (unchanged):", updated.get("version"))
 
+    print("Updating conducting settings (start/end dates)...")
+    conducting = {
+        "start_date": "2020-01-01T08:00:00.000Z",
+        "end_date": "2030-12-31T20:00:00.000Z",
+        "starts_at": "2020-01-01T08:00:00.000Z",
+        "ends_at": "2030-12-31T20:00:00.000Z",
+        "max_responses": 100,
+        "allow_anonymous": True,
+    }
+    conducting_updated = request_json("PUT", API + f"/surveys/{survey_id}", conducting, headers=headers)
+    assert conducting_updated.get("start_date"), "start_date must be saved"
+    assert conducting_updated.get("version") == published.get("version") + 1, "Conducting settings must record a version"
+    print("Conducting settings version:", conducting_updated.get("version"))
+
     print("Starting public session...")
     sess = request_json("POST", API + f"/public/surveys/{survey_id}/sessions", {"respondent_id": "e2e_respondent"})
     session_id = sess.get("id")
