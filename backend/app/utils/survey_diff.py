@@ -3,7 +3,19 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from typing import Any
+
+
+def _json_safe_value(value: Any) -> Any:
+    """Convert values to JSON-serializable forms for version-history storage."""
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return value
+
+
+def _change_pair(old: Any, new: Any) -> dict[str, Any]:
+    return {"old": _json_safe_value(old), "new": _json_safe_value(new)}
 
 
 def _normalize(value: Any) -> str:
@@ -62,16 +74,16 @@ def compute_field_changes(
     changes: dict[str, Any] = {}
 
     if "title" in payload and not values_equal(title, payload["title"]):
-        changes["title"] = {"old": title, "new": payload["title"]}
+        changes["title"] = _change_pair(title, payload["title"])
 
     if "description" in payload and not values_equal(description, payload["description"]):
-        changes["description"] = {"old": description, "new": payload["description"]}
+        changes["description"] = _change_pair(description, payload["description"])
 
     if "survey_json" in payload and not values_equal(survey_json, payload["survey_json"]):
         changes["survey_json"] = build_survey_json_change(survey_json, payload["survey_json"])
 
     if "is_published" in payload and is_published != payload["is_published"]:
-        changes["is_published"] = {"old": is_published, "new": payload["is_published"]}
+        changes["is_published"] = _change_pair(is_published, payload["is_published"])
 
     for field in ("start_date", "end_date", "starts_at", "ends_at", "max_responses", "allow_anonymous"):
         if field not in payload:
@@ -79,7 +91,7 @@ def compute_field_changes(
         current = locals()[field]
         new_val = payload[field]
         if not values_equal(current, new_val):
-            changes[field] = {"old": current, "new": new_val}
+            changes[field] = _change_pair(current, new_val)
 
     return changes
 
